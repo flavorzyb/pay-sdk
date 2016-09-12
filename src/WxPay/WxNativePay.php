@@ -11,14 +11,14 @@ class WxNativePay
     /**
      * @var array
      */
-    private $_config = array();
+    private $config = array();
 
     /**
      * @param array $config
      */
     public function __construct(array $config)
     {
-        $this->_config  = $config;
+        $this->config  = $config;
     }
 
     /**
@@ -27,7 +27,7 @@ class WxNativePay
      */
     public function getConfig()
     {
-        return $this->_config;
+        return $this->config;
     }
 
     /**
@@ -75,11 +75,11 @@ class WxNativePay
         [trade_type] => NATIVE
          */
         $result = new WxPayNativePayData();
-        $result->setAppId($this->_config['appId']);
+        $result->setAppId($this->config['appId']);
         $result->setNonceStr(substr(WxPayApi::getNonceStr(), 0, 12));
         $result->setPrePayId($data['prepay_id']);
         $result->setTimeStamp(time());
-        $result->setSign($result->createSign($this->_config['key']));
+        $result->setSign($result->createSign($this->config['key']));
         return self::NATIVE_URI . $this->toUrlParams($result->getValues());
     }
 
@@ -91,12 +91,12 @@ class WxNativePay
     public function createAppPayParams(array $data)
     {
         $result = new WxPayNativeAppData();
-        $result->setAppId($this->_config['appId']);
-        $result->setPartnerId($this->_config['mchId']);
+        $result->setAppId($this->config['appId']);
+        $result->setPartnerId($this->config['mchId']);
         $result->setNonceStr(WxPayApi::getNonceStr());
         $result->setPrePayId($data['prepay_id']);
         $result->setTimeStamp(time());
-        $result->setSign($result->createSign($this->_config['key']));
+        $result->setSign($result->createSign($this->config['key']));
 
         return $result->getValues();
     }

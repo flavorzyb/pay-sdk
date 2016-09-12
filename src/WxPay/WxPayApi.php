@@ -4,6 +4,8 @@ namespace Pay\WxPay;
 use Pay\WxPay\Modules\WxPayOrderQuery;
 use Pay\WxPay\Modules\WxPayReport;
 use Pay\WxPay\Modules\WxPayResults;
+use Simple\Http\Client;
+use Simple\Log\Writer;
 
 class WxPayApi
 {
@@ -39,15 +41,35 @@ class WxPayApi
      * 配置文件
      * @var array
      */
-    private $_config    = array();
+    private $config    = array();
+
+    /**
+     * @var Writer
+     */
+    protected $log = null;
+
+    /**
+     * @var Client
+     */
+    protected $client = null;
+
+    /**
+     * @return Client
+     */
+    public function getClient()
+    {
+        return new Client();
+    }
 
     /**
      * AliPaySubmit constructor.
      * @param array $config
+     * @param Writer $writer
      */
-    public function __construct(array $config)
+    public function __construct(array $config, Writer $writer)
     {
-        $this->_config  = $config;
+        $this->config  = $config;
+        $this->log = $writer;
     }
 
     /**
@@ -56,7 +78,15 @@ class WxPayApi
      */
     public function getConfig()
     {
-        return $this->_config;
+        return $this->config;
+    }
+
+    /**
+     * @return Writer
+     */
+    public function getLog()
+    {
+        return $this->log;
     }
 
     /**
@@ -99,58 +129,39 @@ class WxPayApi
      */
     public function postXmlCurl($xml, $url, $useCert = false)
     {
-        $result     = false;
-
         $xml        = trim($xml);
         $url        = trim($url);
         $useCert    = boolval($useCert);
 
-        for ($i = 0; $i < self::TRY_NUMBER; $i++) {
-            $ch = curl_init();
-            //设置超时
-            curl_setopt($ch, CURLOPT_TIMEOUT, self::CURL_TIME_OUT);
-            if (("0.0.0.0" != $this->_config['curlProxyHost']) && (0 != $this->_config['curlProxyPort'])) {
-                curl_setopt($ch, CURLOPT_PROXY,     $this->_config['curlProxyHost']);
-                curl_setopt($ch, CURLOPT_PROXYPORT, $this->_config['curlProxyPort']);
-            }
+        $client = $this->getClient();
+        $client->setUrl($url);
+        $client->setMethod(Client::METHOD_POST);
+        $client->setPostFields($xml);
 
-            curl_setopt($ch, CURLOPT_URL,               $url);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER,    TRUE);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST,    2);//严格校验
-            //设置header
-            curl_setopt($ch, CURLOPT_HEADER,            FALSE);
-            //要求结果为字符串且输出到屏幕上
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER,    TRUE);
-
-            if (true == $useCert) {
-                //设置证书
-                //使用证书：cert 与 key 分别属于两个.pem文件
-                curl_setopt($ch, CURLOPT_SSLCERTTYPE, 'PEM');
-                curl_setopt($ch, CURLOPT_SSLCERT, $this->_config['sslCertPath']);
-                curl_setopt($ch, CURLOPT_SSLKEYTYPE, 'PEM');
-                curl_setopt($ch, CURLOPT_SSLKEY, $this->_config['sslKeyPath']);
-            }
-
-            //post提交方式
-            curl_setopt($ch, CURLOPT_POST, TRUE);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
-
-            //运行curl
-            $result   = curl_exec($ch);
-            curl_close($ch);
-
-            if (false !== $result) {
-                break;
-            }
-
-            sleep(1);
+        if (isset($this->config['curlProxyHost']) && ("0.0.0.0" != $this->config['curlProxyHost'])) {
+            $client->setProxyHost($this->config['curlProxyHost']);
         }
 
-        if (false === $result) {
-            Log::pay("WxPayApi postXmlCurl Error:" . $url . " | " . $xml);
+        if (isset($this->config['curlProxyPort']) && (0 != $this->config['curlProxyPort'])) {
+            $client->setProxyPort($this->config['curlProxyPort']);
         }
 
-        return $result;
+        $client->setSslVerifyPeer(true);
+        $client->setSslVerifyHost(true);
+        $client->setHeader(false);
+
+        if ($useCert && isset($this->config['sslCertPath']) && isset($this->config['sslKeyPath'])) {
+            $client->useCert(Client::CERT_TYPE_PEM, $this->config['sslCertPath'], $this->config['sslKeyPath']);
+        }
+
+        if ($client->exec()) {
+            $result = $client->getResponse();
+            return $result;
+        }
+
+        $this->log->error("WxPayApi postXmlCurl Error:" . $url . " | " . $xml);
+
+        return false;
     }
 
     /**
@@ -165,12 +176,12 @@ class WxPayApi
     public function reportCostTime($url, $startTimeStamp, $data, $clientIp)
     {
         //如果不需要上报数据
-        if (0 == $this->_config['reportLevel']) {
+        if (0 == $this->config['reportLevel']) {
             return true;
         }
 
         //如果仅失败上报
-        if((1 == $this->_config['reportLevel']) &&
+        if((1 == $this->config['reportLevel']) &&
             isset($data['return_code']) &&
             $data["return_code"] == "SUCCESS" &&
             isset($data['result_code']) &&
@@ -215,21 +226,21 @@ class WxPayApi
         }
 
         if (!$report->isSetReturnCode()) {
-            Log::pay("WxPay reportCostTime Error: 缺少必填参数return_code url = $url data=" . serialize($data));
+            $this->log->error("WxPay reportCostTime Error: 缺少必填参数return_code url = $url data=" . serialize($data));
             return false;
         }
 
         if (!$report->isSetResultCode()) {
-            Log::pay("WxPay reportCostTime Error: 缺少必填参数result_code url = $url data=" . serialize($data));
+            $this->log->error("WxPay reportCostTime Error: 缺少必填参数result_code url = $url data=" . serialize($data));
             return false;
         }
 
-        $report->setAppId($this->_config['appId']);
-        $report->setMchId($this->_config['mchId']);
+        $report->setAppId($this->config['appId']);
+        $report->setMchId($this->config['mchId']);
         $report->setNonceStr($this->getNonceStr());
         $report->setTime(date("YmdHis"));
         $report->setUserIp($clientIp);
-        $report->setSign($report->createSign($this->_config['key']));
+        $report->setSign($report->createSign($this->config['key']));
 
         return $this->report($report);
     }
@@ -256,7 +267,7 @@ class WxPayApi
     {
         //获取通知的数据
         $xmlString  = trim($xmlString);
-        $result     = WxPayResults::getValuesFromXmlString($xmlString, $this->_config['key']);
+        $result     = WxPayResults::getValuesFromXmlString($xmlString, $this->config['key']);
         return $result;
     }
 
@@ -264,7 +275,7 @@ class WxPayApi
      * 直接输出xml
      * @param string $xml
      */
-    public static function replyNotify($xml)
+    public function replyNotify($xml)
     {
         echo $xml;
     }
@@ -274,29 +285,30 @@ class WxPayApi
      * 查询订单，WxPayOrderQuery中out_trade_no、transaction_id至少填一个
      * appid、mchid、spbill_create_ip、nonce_str不需要填入
      * @param WxPayOrderQuery $orderQuery
+     * @param string $ip
      * @return bool 成功时返回，其他抛异常
      */
-    public function orderQuery(WxPayOrderQuery $orderQuery)
+    public function orderQuery(WxPayOrderQuery $orderQuery, $ip)
     {
         //检测必填参数
         if(!($orderQuery->isSetOutTradeNo() || $orderQuery->isSetTransactionId())) {
             return false;
         }
 
-        $orderQuery->setAppId($this->_config['appId']);//公众账号ID
-        $orderQuery->setMchId($this->_config['mchId']);//商户号
+        $orderQuery->setAppId($this->config['appId']);//公众账号ID
+        $orderQuery->setMchId($this->config['mchId']);//商户号
         $orderQuery->setNonceStr(self::getNonceStr());//随机字符串
 
-        $orderQuery->setSign($orderQuery->createSign($this->_config['key']));//签名
+        $orderQuery->setSign($orderQuery->createSign($this->config['key']));//签名
 
         $xmlString      = $orderQuery->toXml();
 
         $startTimeStamp = self::getMillisecond();//请求开始时间
         $response = $this->postXmlCurl($xmlString, self::ORDER_QUERY_URL, false);
 
-        $result = WxPayResults::getValuesFromXmlString($response, $this->_config['key']);
+        $result = WxPayResults::getValuesFromXmlString($response, $this->config['key']);
 
-        $this->reportCostTime(self::ORDER_QUERY_URL, $startTimeStamp, $result, Util::getIp());//上报请求花费时间
+        $this->reportCostTime(self::ORDER_QUERY_URL, $startTimeStamp, $result, $ip);//上报请求花费时间
 
         return $result;
     }
