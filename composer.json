@@ -1,0 +1,49 @@
+{
+  "name": "flavor/pay-sdk",
+  "description": "pay sdk for weChat and aliPay",
+  "keywords": ["framework", "pay"],
+  "license": "MIT",
+  "homepage": "http://www.zhuyanbin.com",
+  "authors": [
+    {
+      "name": "Yanbin Zhu",
+      "email": "haker-haker@163.com"
+    }
+  ],
+
+  "require": {
+    "php": ">=5.6.0",
+    "flavor/simple": "~1.0"
+  },
+
+  "require-dev": {
+    "mockery/mockery": "~0.9",
+    "phpunit/phpunit": "~5.0"
+  },
+
+  "autoload": {
+    "classmap": [
+    ],
+
+    "files": [
+    ],
+
+    "psr-4": {
+      "Pay\\": "src/"
+    }
+  },
+
+  "autoload-dev": {
+    "classmap": [
+    ],
+
+    "files": [
+    ],
+
+    "psr-4": {
+      "Pay\\": "tests/src/"
+    }
+  },
+
+  "minimum-stability": "stable"
+}
