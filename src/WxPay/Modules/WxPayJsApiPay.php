@@ -1,12 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/7/27
- * Time: 下午5:57
- */
-
-namespace Apps\Pay\WxPay;
+namespace Pay\WxPay\Modules;
 
 
 class WxPayJsApiPay extends WxPayDataBase
@@ -82,7 +75,7 @@ class WxPayJsApiPay extends WxPayDataBase
      * 判断随机字符串是否存在
      * @return bool
      **/
-    public function isSetReturnCode()
+    public function isSetNonceStr()
     {
         return array_key_exists('nonceStr', $this->values);
     }

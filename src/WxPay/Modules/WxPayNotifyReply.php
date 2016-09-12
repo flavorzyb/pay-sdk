@@ -1,12 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/7/28
- * Time: 上午10:21
- */
-
-namespace Apps\Pay\WxPay;
+namespace Pay\WxPay\Modules;
 
 
 class WxPayNotifyReply extends WxPayDataBase

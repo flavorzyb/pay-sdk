@@ -1,12 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/7/24
- * Time: 下午3:02
- */
-
-namespace Apps\Pay\WxPay;
+namespace Pay\WxPay\Modules;
 
 /**
  *
@@ -460,7 +453,7 @@ class WxPayUnifiedOrder extends WxPayDataBase
      * 判断取值如下：JSAPI，NATIVE，APP，详细说明见参数规定是否存在
      * @return true 或 false
      **/
-    public function IsTrade_typeSet()
+    public function hasTradeType()
     {
         return array_key_exists('trade_type', $this->values);
     }

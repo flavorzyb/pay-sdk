@@ -1,16 +1,9 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/7/27
- * Time: 下午2:26
- */
+namespace Pay\WxPay;
 
-namespace Apps\Pay\WxPay;
-
-
-use Apps\Common\Log;
-use Apps\Common\Util;
+use Pay\WxPay\Modules\WxPayOrderQuery;
+use Pay\WxPay\Modules\WxPayReport;
+use Pay\WxPay\Modules\WxPayResults;
 
 class WxPayApi
 {
@@ -250,7 +243,7 @@ class WxPayApi
      */
     private function report(WxPayReport $payReport)
     {
-        $xml = $payReport->ToXml();
+        $xml = $payReport->toXml();
         return $this->postXmlCurl($xml, self::REPORT_URL, false);
     }
 

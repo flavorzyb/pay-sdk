@@ -1,12 +1,7 @@
 <?php
+namespace Pay\WxPay\Modules;
 
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/7/24
- * Time: 下午2:20
- */
-namespace Apps\Pay\WxPay;
+use Pay\WxPay\WxPayException;
 
 /**
  *

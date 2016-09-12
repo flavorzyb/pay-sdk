@@ -1,13 +1,8 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/8/12
- * Time: 上午11:08
- */
+namespace Pay\WxPay;
 
-namespace Apps\Pay\WxPay;
-
+use Pay\WxPay\Modules\WxPayNativeAppData;
+use Pay\WxPay\Modules\WxPayNativePayData;
 
 class WxNativePay
 {

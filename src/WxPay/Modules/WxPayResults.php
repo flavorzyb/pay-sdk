@@ -1,14 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/7/27
- * Time: 下午2:44
- */
-
-namespace Apps\Pay\WxPay;
-use Apps\Common\Log;
-
+namespace Pay\WxPay\Modules;
 
 /**
  * 接口调用结果类
@@ -26,7 +17,6 @@ class WxPayResults extends  WxPayDataBase
     public function checkSign($key)
     {
         if (!$this->isSetSign()) {
-            Log::pay("WxPayResults Error:签名错误！");
             return false;
         }
 
@@ -35,7 +25,6 @@ class WxPayResults extends  WxPayDataBase
             return true;
         }
 
-        Log::pay("WxPayResults Error:签名不一致！");
         return false;
     }
 

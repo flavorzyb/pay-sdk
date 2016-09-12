@@ -1,12 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/7/27
- * Time: 下午3:50
- */
-
-namespace Apps\Pay\WxPay;
+namespace Pay\WxPay\Modules;
 
 
 class WxPayReport extends WxPayDataBase

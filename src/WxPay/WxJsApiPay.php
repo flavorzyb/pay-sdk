@@ -1,15 +1,8 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/7/24
- * Time: 下午2:53
- */
-
-namespace Apps\Pay\WxPay;
+namespace Pay\WxPay;
 
 
-use Apps\Common\Log;
+use Pay\WxPay\Modules\WxPayJsApiPay;
 
 class WxJsApiPay
 {
@@ -128,12 +121,10 @@ class WxJsApiPay
             }
 
             // 如果超时,则记录下日志
-            Log::error("[getOpenId] i = {$i}  Wx Pay Get Open Id Error:" . $url);
             usleep(100000);
         }
 
         if (false === $result) {
-            Log::error("[getOpenId] Wx Pay Get Open Id Error:" . $url);
             return "";
         }
 
@@ -145,7 +136,6 @@ class WxJsApiPay
             return $data['openid'];
         }
 
-        Log::error("[getOpenId] open id is not exists, url:" . $url . ', data:' . serialize($data));
         return '';
     }
 
