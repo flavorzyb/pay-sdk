@@ -2,6 +2,7 @@
 namespace Pay\AliPay;
 
 use DOMDocument;
+use Simple\Log\Writer;
 
 class AliPaySubmit extends AliPayBase
 {
@@ -19,9 +20,11 @@ class AliPaySubmit extends AliPayBase
     /**
      * AliPaySubmit constructor.
      * @param array $config
+     * @param Writer $logWriter
      */
-    public function __construct(array $config)
+    public function __construct(array $config, Writer $logWriter)
     {
+        parent::__construct($logWriter);
         $this->_config  = $config;
     }
 

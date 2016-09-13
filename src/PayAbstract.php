@@ -1,25 +1,48 @@
 <?php
 namespace Pay;
 
+use Pay\Modules\PayOrder;
+use Simple\Log\Writer;
 
 abstract class PayAbstract
 {
+    /**
+     * @var Writer
+     */
+    protected $logWriter = null;
+
+    /**
+     * PayAbstract constructor.
+     * @param Writer $logWriter
+     */
+    public function __construct(Writer $logWriter)
+    {
+        $this->logWriter = $logWriter;
+    }
+
+    /**
+     * @return Writer
+     */
+    public function getLogWriter()
+    {
+        return $this->logWriter;
+    }
 
     /**
      * 生成支付的url
-     * @param PayOrderModel $payOrder
+     * @param PayOrder $payOrder
      * @return string
      */
-    abstract protected function _payUrl(PayOrderModel $payOrder);
+    abstract protected function _payUrl(PayOrder $payOrder);
 
     /**
      * 支付
-     * @param PayOrderModel $payOrder
+     * @param PayOrder $payOrder
      */
-    public function pay(PayOrderModel $payOrder)
+    public function pay(PayOrder $payOrder)
     {
         $url = $this->payUrl($payOrder);
-        Log::pay("pay url:".$url);
+        $this->getLogWriter()->info("pay url:".$url);
         if ('' != $url) {
             header('Location:' . $url);
             exit();
@@ -28,10 +51,10 @@ abstract class PayAbstract
 
     /**
      * 支付URL
-     * @param PayOrderModel $payOrder
+     * @param PayOrder $payOrder
      * @return string
      */
-    public function payUrl(PayOrderModel $payOrder)
+    public function payUrl(PayOrder $payOrder)
     {
         if (!$this->check($payOrder)) {
             return '';
@@ -42,28 +65,28 @@ abstract class PayAbstract
 
     /**
      * 检查
-     * @param PayOrderModel $payOrder
+     * @param PayOrder $payOrder
      * @return bool
      */
-    protected function check(PayOrderModel $payOrder)
+    protected function check(PayOrder $payOrder)
     {
         if ('' == $payOrder->getOrderId()) {
-            Log::pay("error: 订单ID不能为空");
+            $this->getLogWriter()->error("订单ID不能为空");
             return false;
         }
 
         if ('' == $payOrder->getGoodsName()) {
-            Log::pay("error: 商品名不能为空");
+            $this->getLogWriter()->error("商品名不能为空");
             return false;
         }
 
         if (0 >= $payOrder->getPayAmount()) {
-            Log::pay("error: 支付款不能为0");
+            $this->getLogWriter()->error("支付款不能为0");
             return false;
         }
 
         if (false !== stripos($payOrder->getExtra(), '|')) {
-            Log::pay("error: 扩展字段不能包含|字符");
+            $this->getLogWriter()->error("扩展字段不能包含|字符");
             return false;
         }
 

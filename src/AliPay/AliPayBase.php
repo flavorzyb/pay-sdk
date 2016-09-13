@@ -1,17 +1,32 @@
 <?php
 namespace Pay\AliPay;
 
+use Simple\Http\Client;
+use Simple\Log\Writer;
+
 class AliPayBase
 {
     /**
-     * curl超时时间 单位:秒
+     * @var Writer
      */
-    const CURL_TIMEOUT  = 3;
+    protected $logWriter = null;
 
     /**
-     * 重试次数
+     * AliPayBase constructor.
+     * @param Writer $logWriter
      */
-    const TRY_NUMBER    = 3;
+    public function __construct(Writer $logWriter)
+    {
+        $this->logWriter = $logWriter;
+    }
+
+    /**
+     * @return Writer
+     */
+    protected function getLogWriter()
+    {
+        return $this->logWriter;
+    }
 
     /**
      * 除去数组中的空值和签名参数
@@ -121,6 +136,11 @@ class AliPayBase
         return $result;
     }
 
+    protected function getClient()
+    {
+        return new Client();
+    }
+
     /**
      * 远程获取数据，POST模式
      * 注意：
@@ -139,27 +159,20 @@ class AliPayBase
             $url = $url."_input_charset=".$inputCharset;
         }
 
-        for ($i = 0; $i < self::TRY_NUMBER; $i++) {
-            $curl = curl_init($url);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, true);//SSL证书认证
-            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);//严格认证
-            curl_setopt($curl, CURLOPT_CAINFO, $certUrl);//证书地址
-            curl_setopt($curl, CURLOPT_HEADER, 0); // 过滤HTTP头
-            curl_setopt($curl, CURLOPT_TIMEOUT, self::CURL_TIMEOUT);
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);// 显示输出结果
-            curl_setopt($curl, CURLOPT_POST, true); // post传输数据
-            curl_setopt($curl, CURLOPT_POSTFIELDS, $postStr);// post传输数据
-            $result = curl_exec($curl);
-            curl_close($curl);
+        $client = $this->getClient();
+        $client->setMethod(Client::METHOD_POST);
+        $client->setUrl($url);
+        $client->setSslVerifyHost(true);
+        $client->setSslVerifyPeer(true);
+        $client->setCaInfo($certUrl);
+        $client->setHeader(false);
+        $client->setPostFields($postStr);
 
-            if (false !== $result) {
-                break;
-            }
-            sleep(1);
-        }
-
-        if (false === $result) {
-            Log::pay("AliPay Post Data Error: " . $url . "  " . $postStr);
+        $result = false;
+        if ($client->exec()) {
+            $result = $client->getResponse();
+        } else {
+            $this->getLogWriter()->error("AliPay Post Data Error: " . $url . "  " . $postStr);
         }
 
         return $result;
@@ -176,25 +189,19 @@ class AliPayBase
      */
     protected function getHttpResponseWithGET($url, $certUrl)
     {
-        for ($i = 0; $i < self::TRY_NUMBER; $i++) {
-            $curl = curl_init($url);
-            curl_setopt($curl,  CURLOPT_HEADER,         0); // 过滤HTTP头
-            curl_setopt($curl,  CURLOPT_TIMEOUT,        self::CURL_TIMEOUT);
-            curl_setopt($curl,  CURLOPT_RETURNTRANSFER, 1);// 显示输出结果
-            curl_setopt($curl,  CURLOPT_SSL_VERIFYPEER, true);//SSL证书认证
-            curl_setopt($curl,  CURLOPT_SSL_VERIFYHOST, 2);//严格认证
-            curl_setopt($curl,  CURLOPT_CAINFO,         $certUrl);//证书地址
-            $result = curl_exec($curl);
-            curl_close($curl);
+        $client = $this->getClient();
+        $client->setMethod(Client::METHOD_GET);
+        $client->setUrl($url);
+        $client->setSslVerifyHost(true);
+        $client->setSslVerifyPeer(true);
+        $client->setCaInfo($certUrl);
+        $client->setHeader(false);
 
-            if (false !== $result) {
-                break;
-            }
-            sleep(1);
-        }
-
-        if (false === $result) {
-            Log::pay("AliPay Get Data Error: " . $url);
+        $result = false;
+        if ($client->exec()) {
+            $result = $client->getResponse();
+        } else {
+            $this->getLogWriter()->error("AliPay Get Data Error: " . $url);
         }
 
         return $result;

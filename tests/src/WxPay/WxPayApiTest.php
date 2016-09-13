@@ -38,6 +38,7 @@ class WxPayApiTest extends \PHPUnit_Framework_TestCase
         $result->shouldReceive('setSslVerifyPeer')->andReturnNull();
         $result->shouldReceive('setSslVerifyHost')->andReturnNull();
         $result->shouldReceive('setHeader')->andReturnNull();
+        $result->shouldReceive('setCaInfo')->andReturnNull();
         $result->shouldReceive('useCert')->andReturnNull();
 
         return $result;

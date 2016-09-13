@@ -1,9 +1,8 @@
 <?php
 namespace Pay\AliPay;
 
-
-use Apps\Common\Log;
 use DOMDocument;
+use Simple\Log\Writer;
 
 class AliPayNotify extends AliPayBase
 {
@@ -25,9 +24,11 @@ class AliPayNotify extends AliPayBase
     /**
      * AliPayNotify constructor.
      * @param array $_config
+     * @param Writer $logWriter
      */
-    public function __construct(array $_config)
+    public function __construct(array $_config, Writer $logWriter)
     {
+        parent::__construct($logWriter);
         $this->_config = $_config;
     }
 
@@ -38,7 +39,7 @@ class AliPayNotify extends AliPayBase
      */
     public function verifyNotify(array $data)
     {
-        Log::pay("AliPay Notify Data:" . serialize($data));
+        $this->getLogWriter()->info("AliPay Notify Data:" . serialize($data));
 
         if (empty($data)) {
             return false;
