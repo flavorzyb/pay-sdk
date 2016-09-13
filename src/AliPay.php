@@ -1,11 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/7/22
- * Time: 上午10:40
- */
-
 namespace Apps\Pay;
 
 use Apps\Pay\Model\PayNotifyModel;

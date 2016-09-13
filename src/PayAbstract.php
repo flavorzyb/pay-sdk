@@ -1,16 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/7/22
- * Time: 上午10:28
- */
+namespace Pay;
 
-namespace Apps\Pay;
-
-
-use Apps\Common\Log;
-use Apps\Pay\Model\PayOrderModel;
 
 abstract class PayAbstract
 {

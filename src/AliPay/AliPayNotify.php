@@ -1,12 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: flavor
- * Date: 15/7/22
- * Time: 下午10:08
- */
-
-namespace Apps\Pay\AliPay;
+namespace Pay\AliPay;
 
 
 use Apps\Common\Log;
