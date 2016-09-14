@@ -177,8 +177,8 @@ class WxPay extends PayAbstract
         $result->setAttach($payOrder->getExtra());
         $result->setOutTradeNo($payOrder->getOrderId());
 
-        if ($payOrder->getLimitPay() != '') {
-            $result->setLimitPay($payOrder->getLimitPay());
+        if ($payOrder->getLimitPay()->isNoCredit()) {
+            $result->setLimitPay($payOrder->getLimitPay()->getValue());
         }
 
         $result->setTotalFee(($payOrder->getPayAmount() * 100));
