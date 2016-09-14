@@ -1,6 +1,7 @@
 <?php
 namespace Pay\WxPay;
 
+use Pay\WxPay\Modules\WxPayConfig;
 use Pay\WxPay\Modules\WxPayNativeAppData;
 use Pay\WxPay\Modules\WxPayNativePayData;
 
@@ -9,21 +10,21 @@ class WxNativePay
     const NATIVE_URI = "weixin://wap/pay?";
 
     /**
-     * @var array
+     * @var WxPayConfig
      */
-    private $config = array();
+    private $config = null;
 
     /**
-     * @param array $config
+     * @param WxPayConfig $config
      */
-    public function __construct(array $config)
+    public function __construct(WxPayConfig $config)
     {
         $this->config  = $config;
     }
 
     /**
      * 获取配置
-     * @return array
+     * @return WxPayConfig
      */
     public function getConfig()
     {
@@ -75,11 +76,11 @@ class WxNativePay
         [trade_type] => NATIVE
          */
         $result = new WxPayNativePayData();
-        $result->setAppId($this->config['appId']);
+        $result->setAppId($this->config->getAppId());
         $result->setNonceStr(substr(WxPayApi::getNonceStr(), 0, 12));
         $result->setPrePayId($data['prepay_id']);
         $result->setTimeStamp(time());
-        $result->setSign($result->createSign($this->config['key']));
+        $result->setSign($result->createSign($this->config->getKey()));
         return self::NATIVE_URI . $this->toUrlParams($result->getValues());
     }
 
@@ -91,12 +92,12 @@ class WxNativePay
     public function createAppPayParams(array $data)
     {
         $result = new WxPayNativeAppData();
-        $result->setAppId($this->config['appId']);
-        $result->setPartnerId($this->config['mchId']);
+        $result->setAppId($this->config->getAppId());
+        $result->setPartnerId($this->config->getMchId());
         $result->setNonceStr(WxPayApi::getNonceStr());
         $result->setPrePayId($data['prepay_id']);
         $result->setTimeStamp(time());
-        $result->setSign($result->createSign($this->config['key']));
+        $result->setSign($result->createSign($this->config->getKey()));
 
         return $result->getValues();
     }

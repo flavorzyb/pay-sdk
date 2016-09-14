@@ -4,6 +4,7 @@ namespace Pay\WxPay;
 use Pay\WxPay\Modules\WxPayOrderQuery;
 use Pay\WxPay\Modules\WxPayReport;
 use Pay\WxPay\Modules\WxPayResults;
+use Pay\WxPay\Modules\WxPayConfig;
 use Simple\Http\Client;
 use Simple\Log\Writer;
 
@@ -39,9 +40,9 @@ class WxPayApi
 
     /**
      * 配置文件
-     * @var array
+     * @var WxPayConfig
      */
-    private $config    = array();
+    private $config    = null;
 
     /**
      * @var Writer
@@ -63,10 +64,10 @@ class WxPayApi
 
     /**
      * AliPaySubmit constructor.
-     * @param array $config
+     * @param WxPayConfig $config
      * @param Writer $writer
      */
-    public function __construct(array $config, Writer $writer)
+    public function __construct(WxPayConfig $config, Writer $writer)
     {
         $this->config  = $config;
         $this->log = $writer;
@@ -74,7 +75,7 @@ class WxPayApi
 
     /**
      * 获取配置
-     * @return array
+     * @return WxPayConfig
      */
     public function getConfig()
     {
@@ -138,21 +139,21 @@ class WxPayApi
         $client->setMethod(Client::METHOD_POST);
         $client->setPostFields($xml);
 
-        if (isset($this->config['curlProxyHost']) && ("0.0.0.0" != $this->config['curlProxyHost'])) {
-            $client->setProxyHost($this->config['curlProxyHost']);
+        if ("0.0.0.0" != $this->config->getCurlProxyHost()) {
+            $client->setProxyHost($this->config->getCurlProxyHost());
         }
 
-        if (isset($this->config['curlProxyPort']) && (0 != $this->config['curlProxyPort'])) {
-            $client->setProxyPort($this->config['curlProxyPort']);
+        if (0 != $this->config->getCurlProxyPort()) {
+            $client->setProxyPort($this->config->getCurlProxyPort());
         }
 
         $client->setSslVerifyPeer(true);
         $client->setSslVerifyHost(true);
-        $client->setCaInfo($this->config['sslCertPath']);
+        $client->setCaInfo($this->config->getRootCaPath());
         $client->setHeader(false);
 
-        if ($useCert && isset($this->config['sslCertPath']) && isset($this->config['sslKeyPath'])) {
-            $client->useCert(Client::CERT_TYPE_PEM, $this->config['sslCertPath'], $this->config['sslKeyPath']);
+        if ($useCert && ('' != $this->config->getSslCertPath()) && ('' != $this->config->getSslKeyPath())) {
+            $client->useCert(Client::CERT_TYPE_PEM, $this->config->getSslCertPath(), $this->config->getSslKeyPath());
         }
 
         if ($client->exec()) {
@@ -177,12 +178,12 @@ class WxPayApi
     public function reportCostTime($url, $startTimeStamp, $data, $clientIp)
     {
         //如果不需要上报数据
-        if (0 == $this->config['reportLevel']) {
+        if (0 == $this->config->getReportLevel()) {
             return true;
         }
 
         //如果仅失败上报
-        if((1 == $this->config['reportLevel']) &&
+        if((1 == $this->config->getReportLevel()) &&
             isset($data['return_code']) &&
             $data["return_code"] == "SUCCESS" &&
             isset($data['result_code']) &&
@@ -236,12 +237,12 @@ class WxPayApi
             return false;
         }
 
-        $report->setAppId($this->config['appId']);
-        $report->setMchId($this->config['mchId']);
+        $report->setAppId($this->config->getAppId());
+        $report->setMchId($this->config->getMchId());
         $report->setNonceStr($this->getNonceStr());
         $report->setTime(date("YmdHis"));
         $report->setUserIp($clientIp);
-        $report->setSign($report->createSign($this->config['key']));
+        $report->setSign($report->createSign($this->config->getKey()));
 
         return $this->report($report);
     }
@@ -268,7 +269,7 @@ class WxPayApi
     {
         //获取通知的数据
         $xmlString  = trim($xmlString);
-        $result     = WxPayResults::getValuesFromXmlString($xmlString, $this->config['key']);
+        $result     = WxPayResults::getValuesFromXmlString($xmlString, $this->config->getKey());
         return $result;
     }
 
@@ -296,18 +297,18 @@ class WxPayApi
             return false;
         }
 
-        $orderQuery->setAppId($this->config['appId']);//公众账号ID
-        $orderQuery->setMchId($this->config['mchId']);//商户号
+        $orderQuery->setAppId($this->config->getAppId());//公众账号ID
+        $orderQuery->setMchId($this->config->getMchId());//商户号
         $orderQuery->setNonceStr(self::getNonceStr());//随机字符串
 
-        $orderQuery->setSign($orderQuery->createSign($this->config['key']));//签名
+        $orderQuery->setSign($orderQuery->createSign($this->config->getKey()));//签名
 
         $xmlString      = $orderQuery->toXml();
 
         $startTimeStamp = self::getMillisecond();//请求开始时间
         $response = $this->postXmlCurl($xmlString, self::ORDER_QUERY_URL, false);
 
-        $result = WxPayResults::getValuesFromXmlString($response, $this->config['key']);
+        $result = WxPayResults::getValuesFromXmlString($response, $this->config->getKey());
 
         $this->reportCostTime(self::ORDER_QUERY_URL, $startTimeStamp, $result, $ip);//上报请求花费时间
 

@@ -4,6 +4,7 @@ namespace Pay\WxPay;
 use Mockery as m;
 use Pay\WxPay\Modules\WxPayOrderQuery;
 use Simple\Http\Client;
+use ConfigFactory;
 
 class WxPayApiMock extends WxPayApi
 {
@@ -46,7 +47,7 @@ class WxPayApiTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $config = include __DIR__ . DIRECTORY_SEPARATOR . 'config.php';
+        $config = ConfigFactory::createWxConfig();
 
         parent::setUp();
         $writer = m::mock('Simple\Log\Writer');
@@ -60,7 +61,7 @@ class WxPayApiTest extends \PHPUnit_Framework_TestCase
 
     public function testClient()
     {
-        $config = include __DIR__ . DIRECTORY_SEPARATOR . 'config.php';
+        $config = ConfigFactory::createWxConfig();
         $this->pay = new WxPayApi($config, $this->pay->getLog());
         self::assertTrue($this->pay->getClient() instanceof Client);
     }
@@ -79,12 +80,12 @@ class WxPayApiTest extends \PHPUnit_Framework_TestCase
 
         //////////////[reportLevel==0]//////////////////////////////////////////////////////////////////////////////////
         $config = $this->pay->getConfig();
-        $config['reportLevel'] = 0;
+        $config->setReportLevel(0);
         $this->pay = new WxPayApiMock($config, $this->pay->getLog());
         self::assertEquals(true, $this->pay->reportCostTime(WxPayApi::UNIFIED_ORDER_URL, time(), $data, '127.0.0.1'));
 
         /////////////[reportLevel=1 return_code=SUCCESS result_code=SUCCESS]////////////////////////////////////////////
-        $config['reportLevel'] = 1;
+        $config->setReportLevel(1);
         $this->pay = new WxPayApiMock($config, $this->pay->getLog());
         $data['return_code'] = 'SUCCESS';
         $data['result_code'] = 'SUCCESS';
@@ -110,9 +111,9 @@ class WxPayApiTest extends \PHPUnit_Framework_TestCase
 
     public function testPostXmlCurl()
     {
-        $config = include __DIR__ . DIRECTORY_SEPARATOR . 'config.php';
-        $config['curlProxyHost'] = '127.0.0.1';
-        $config['curlProxyPort'] = '8118';
+        $config = ConfigFactory::createWxConfig();
+        $config->setCurlProxyHost('127.0.0.1');
+        $config->setCurlProxyPort(8118);
         $client = $this->initClient();
         $client->shouldReceive('exec')->andReturn(false);
         $client->shouldReceive('getResponse')->andReturn('ok');
@@ -137,7 +138,7 @@ class WxPayApiTest extends \PHPUnit_Framework_TestCase
   <out_trade_no><![CDATA[1409811653]]></out_trade_no>
   <result_code><![CDATA[SUCCESS]]></result_code>
   <return_code><![CDATA[SUCCESS]]></return_code>
-  <sign><![CDATA[1DAB47362E2C946865AE1CA0BE1360CB]]></sign>
+  <sign><![CDATA[77A8A29625B4FB89DCE4CA9921D810F3]]></sign>
   <sub_mch_id><![CDATA[10000100]]></sub_mch_id>
   <time_end><![CDATA[20140903131540]]></time_end>
   <total_fee>1</total_fee>

@@ -2,26 +2,27 @@
 namespace Pay\WxPay;
 
 
+use Pay\WxPay\Modules\WxPayConfig;
 use Pay\WxPay\Modules\WxPayJsApiPay;
 
 class WxJsApiPay
 {
     /**
-     * @var array
+     * @var WxPayConfig
      */
-    private $config = array();
+    private $config = null;
 
     /**
-     * @param array $config
+     * @param WxPayConfig $config
      */
-    public function __construct(array $config)
+    public function __construct(WxPayConfig $config)
     {
         $this->config  = $config;
     }
 
     /**
      * 获取配置
-     * @return array
+     * @return WxPayConfig
      */
     public function getConfig()
     {
@@ -45,12 +46,12 @@ class WxJsApiPay
         }
 
         $jsPayData  = new WxPayJsApiPay();
-        $jsPayData->setAppId($this->config['appId']);
+        $jsPayData->setAppId($this->config->getAppId());
         $jsPayData->setTimeStamp(time());
         $jsPayData->setNonceStr(WxPayApi::getNonceStr());
         $jsPayData->setPackage("prepay_id=" . $unifiedOrderResult['prepay_id']);
         $jsPayData->setSignType("MD5");
-        $jsPayData->setPaySign($jsPayData->createSign($this->config['key']));
+        $jsPayData->setPaySign($jsPayData->createSign($this->config->getKey()));
 
         return json_encode($jsPayData->getValues());
     }
