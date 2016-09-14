@@ -26,18 +26,18 @@ class WxPay extends PayAbstract
      *
      * @var WxJsApiPay
      */
-    private $_wxJsApiPay    = null;
+    private $wxJsApiPay    = null;
 
     /**
      * @var WxNativePay
      */
-    private $_wxNativePay   = null;
+    private $wxNativePay   = null;
 
     /**
      * open id
      * @var string
      */
-    private $_openId        = '';
+    private $openId        = '';
 
     /**
      * WxPay constructor.
@@ -56,11 +56,11 @@ class WxPay extends PayAbstract
      */
     public function getWxJsApiPay()
     {
-        if (null == $this->_wxJsApiPay) {
+        if (null == $this->wxJsApiPay) {
             $this->setWxJsApiPay(new WxJsApiPay($this->config));
         }
 
-        return $this->_wxJsApiPay;
+        return $this->wxJsApiPay;
     }
 
     /**
@@ -70,7 +70,7 @@ class WxPay extends PayAbstract
      */
     public function setWxJsApiPay(WxJsApiPay $wxJsApiPay)
     {
-        $this->_wxJsApiPay  = $wxJsApiPay;
+        $this->wxJsApiPay  = $wxJsApiPay;
     }
 
     /**
@@ -78,11 +78,11 @@ class WxPay extends PayAbstract
      */
     public function getWxNativePay()
     {
-        if (null == $this->_wxNativePay) {
+        if (null == $this->wxNativePay) {
             $this->setWxNativePay(new WxNativePay($this->config));
         }
 
-        return $this->_wxNativePay;
+        return $this->wxNativePay;
     }
 
     /**
@@ -90,7 +90,7 @@ class WxPay extends PayAbstract
      */
     public function setWxNativePay(WxNativePay $wxNativePay)
     {
-        $this->_wxNativePay = $wxNativePay;
+        $this->wxNativePay = $wxNativePay;
     }
 
 
@@ -120,7 +120,7 @@ class WxPay extends PayAbstract
      */
     public function setOpenId($openId)
     {
-        $this->_openId  = trim($openId);
+        $this->openId  = trim($openId);
     }
 
     /**
@@ -140,7 +140,7 @@ class WxPay extends PayAbstract
 
         $unifiedOrder   = $this->createPayUnifiedOrder($payOrder, $notifyUrl);
         $unifiedOrder->setTradeType("JSAPI");
-        $unifiedOrder->setOpenId($this->_openId);
+        $unifiedOrder->setOpenId($this->openId);
         // 签名
         $unifiedOrder->setSign($unifiedOrder->createSign($this->config['key']));
 
