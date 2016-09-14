@@ -21,7 +21,7 @@ class WxPayNotifyReply extends WxPayDataBase
      */
     public function getReturnCode()
     {
-        return $this->values['return_code'];
+        return $this->get('return_code');
     }
 
     /**
@@ -41,7 +41,7 @@ class WxPayNotifyReply extends WxPayDataBase
      */
     public function getReturnMsg()
     {
-        return $this->values['return_msg'];
+        return $this->get('return_msg');
     }
 
     /**

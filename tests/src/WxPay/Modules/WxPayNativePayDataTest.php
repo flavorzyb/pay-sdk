@@ -36,10 +36,5 @@ class WxPayNativePayDataTest extends WxPayDataBaseTest
         self::assertEquals('Vz6WsT7xm6iwJyls', $this->getModel()->getNonceStr());
         self::assertEquals('wx201508122132221b33dfd6990431165182', $this->getModel()->getPrePayId());
         self::assertEquals('wx71be479776815a2a', $this->getModel()->getPartnerId());
-
-        self::assertTrue($this->getModel()->isSetAppId());
-        self::assertTrue($this->getModel()->isSetNonceStr());
-        self::assertTrue($this->getModel()->isSetTimeStamp());
-        self::assertTrue($this->getModel()->isSetPrePayId());
     }
 }

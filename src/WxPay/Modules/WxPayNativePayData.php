@@ -24,16 +24,7 @@ class WxPayNativePayData extends WxPayDataBase
      **/
     public function getAppId()
     {
-        return $this->values['appid'];
-    }
-
-    /**
-     * 判断微信分配的公众账号ID是否存在
-     * @return boolean
-     **/
-    public function isSetAppId()
-    {
-        return array_key_exists('appid', $this->values);
+        return $this->get('appid');
     }
 
     /**
@@ -51,16 +42,7 @@ class WxPayNativePayData extends WxPayDataBase
      **/
     public function getTimeStamp()
     {
-        return $this->values['timestamp'];
-    }
-
-    /**
-     * 判断支付时间戳是否存在
-     * @return boolean
-     **/
-    public function isSetTimeStamp()
-    {
-        return array_key_exists('timestamp', $this->values);
+        return $this->get('timestamp');
     }
 
     /**
@@ -78,16 +60,7 @@ class WxPayNativePayData extends WxPayDataBase
      **/
     public function getNonceStr()
     {
-        return $this->values['noncestr'];
-    }
-
-    /**
-     * 判断随机字符串是否存在
-     * @return boolean
-     **/
-    public function isSetNonceStr()
-    {
-        return array_key_exists('noncestr', $this->values);
+        return $this->get('noncestr');
     }
 
     /**
@@ -103,15 +76,7 @@ class WxPayNativePayData extends WxPayDataBase
      **/
     public function getPrePayId()
     {
-        return $this->values['prepayid'];
-    }
-
-    /**
-     * @return boolean
-     **/
-    public function isSetPrePayId()
-    {
-        return array_key_exists('prepayid', $this->values);
+        return $this->get('prepayid');
     }
 
     public function setPartnerId($partnerId)
@@ -121,6 +86,6 @@ class WxPayNativePayData extends WxPayDataBase
 
     public function getPartnerId()
     {
-        return $this->values['partnerid'];
+        return $this->get('partnerid');
     }
 }

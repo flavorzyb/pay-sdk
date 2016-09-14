@@ -37,12 +37,5 @@ class WxPayOrderQueryTest extends WxPayDataBaseTest
         self::assertEquals('Vz6WsT7xm6iwJyls', $this->getModel()->getNonceStr());
         self::assertEquals('1008450740201411110005820873', $this->getModel()->getTransactionId());
         self::assertEquals('20150806125346', $this->getModel()->getOutTradeNo());
-
-
-        self::assertTrue($this->getModel()->isSetAppId());
-        self::assertTrue($this->getModel()->isSetMchId());
-        self::assertTrue($this->getModel()->isSetNonceStr());
-        self::assertTrue($this->getModel()->isSetTransactionId());
-        self::assertTrue($this->getModel()->isSetOutTradeNo());
     }
 }

@@ -67,24 +67,5 @@ class WxPayUnifiedOrderTest extends WxPayDataBaseTest
         self::assertEquals('http://www.weixin.qq.com/wxpay/pay.php', $this->getModel()->getNotifyUrl());
         self::assertEquals('深圳分店', $this->getModel()->getAttach());
         self::assertEquals('WXG', $this->getModel()->getGoodsTag());
-
-        self::assertTrue($this->getModel()->hasAppId());
-        self::assertTrue($this->getModel()->hasMchId());
-        self::assertTrue($this->getModel()->hasNonceStr());
-        self::assertTrue($this->getModel()->hasDeviceInfo());
-        self::assertTrue($this->getModel()->hasOutTradeNo());
-        self::assertTrue($this->getModel()->hasBody());
-        self::assertTrue($this->getModel()->hasDetail());
-        self::assertTrue($this->getModel()->hasFeeType());
-        self::assertTrue($this->getModel()->hasOpenId());
-        self::assertTrue($this->getModel()->hasProductId());
-        self::assertTrue($this->getModel()->hasTradeType());
-        self::assertTrue($this->getModel()->hasTotalFee());
-        self::assertTrue($this->getModel()->hasTimeExpire());
-        self::assertTrue($this->getModel()->hasTimeStart());
-        self::assertTrue($this->getModel()->hasNotifyUrl());
-        self::assertTrue($this->getModel()->hasSpbillCreateIp());
-        self::assertTrue($this->getModel()->hasAttach());
-        self::assertTrue($this->getModel()->hasGoodsTag());
     }
 }

@@ -39,17 +39,10 @@ class WxPayJsApiPayTest extends WxPayDataBaseTest
         self::assertEquals('JSAPI', $this->getModel()->getPackage());
         self::assertEquals('md5', $this->getModel()->getSignType());
         self::assertEquals('2B1A9EBCA09D6A0531CCC40B26362597', $this->getModel()->getPaySign());
-
-        self::assertTrue($this->getModel()->isSetAppId());
-        self::assertTrue($this->getModel()->isSetNonceStr());
-        self::assertTrue($this->getModel()->isSetTimeStamp());
-        self::assertTrue($this->getModel()->isSetPackage());
-        self::assertTrue($this->getModel()->isSetSignType());
-        self::assertTrue($this->getModel()->isSetPaySign());
     }
 
     /**
-     * @expectedException Pay\WxPay\WxPayException
+     * @expectedException \Pay\WxPay\WxPayException
      */
     public function testEmptyToXmlThrowsException()
     {

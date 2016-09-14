@@ -1,5 +1,6 @@
 <?php
 namespace Pay\AliPay;
+
 use Mockery as m;
 use Simple\Http\Client;
 
@@ -57,10 +58,10 @@ class AliPaySubmitTest extends \PHPUnit_Framework_TestCase
 
     public function test()
     {
-        $result         = $this->pay->buildRequestHttp(['orderid'=>'1111111']);
+//        $result         = $this->pay->buildRequestHttp(['orderid'=>'1111111']);
         //URLDECODE返回的信息
-        $result         = urldecode($result);
+//        $result         = urldecode($result);
         //解析远程模拟提交后返回的信息
-        $tokenArray     = $this->pay->parseResponse($result);
+//        $tokenArray     = $this->pay->parseResponse($result);
     }
 }

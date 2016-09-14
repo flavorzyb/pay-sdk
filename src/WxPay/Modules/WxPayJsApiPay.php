@@ -18,17 +18,8 @@ class WxPayJsApiPay extends WxPayDataBase
      **/
     public function getAppId()
     {
-        return $this->values['appId'];
+        return $this->get('appId');
     }
-    /**
-     * 判断微信分配的公众账号ID是否存在
-     * @return bool
-     **/
-    public function isSetAppId()
-    {
-        return array_key_exists('appId', $this->values);
-    }
-
 
     /**
      * 设置支付时间戳
@@ -44,15 +35,7 @@ class WxPayJsApiPay extends WxPayDataBase
      **/
     public function getTimeStamp()
     {
-        return $this->values['timeStamp'];
-    }
-    /**
-     * 判断支付时间戳是否存在
-     * @return bool
-     **/
-    public function isSetTimeStamp()
-    {
-        return array_key_exists('timeStamp', $this->values);
+        return $this->get('timeStamp');
     }
 
     /**
@@ -69,17 +52,8 @@ class WxPayJsApiPay extends WxPayDataBase
      **/
     public function getNonceStr()
     {
-        return $this->values['nonceStr'];
+        return $this->get('nonceStr');
     }
-    /**
-     * 判断随机字符串是否存在
-     * @return bool
-     **/
-    public function isSetNonceStr()
-    {
-        return array_key_exists('nonceStr', $this->values);
-    }
-
 
     /**
      * 设置订单详情扩展字符串
@@ -95,15 +69,7 @@ class WxPayJsApiPay extends WxPayDataBase
      **/
     public function getPackage()
     {
-        return $this->values['package'];
-    }
-    /**
-     * 判断订单详情扩展字符串是否存在
-     * @return bool
-     **/
-    public function isSetPackage()
-    {
-        return array_key_exists('package', $this->values);
+        return $this->get('package');
     }
 
     /**
@@ -120,15 +86,7 @@ class WxPayJsApiPay extends WxPayDataBase
      **/
     public function getSignType()
     {
-        return $this->values['signType'];
-    }
-    /**
-     * 判断签名方式是否存在
-     * @return bool
-     **/
-    public function isSetSignType()
-    {
-        return array_key_exists('signType', $this->values);
+        return $this->get('signType');
     }
 
     /**
@@ -145,14 +103,6 @@ class WxPayJsApiPay extends WxPayDataBase
      **/
     public function getPaySign()
     {
-        return $this->values['paySign'];
-    }
-    /**
-     * 判断签名方式是否存在
-     * @return bool
-     **/
-    public function isSetPaySign()
-    {
-        return array_key_exists('paySign', $this->values);
+        return $this->get('paySign');
     }
 }

@@ -54,21 +54,5 @@ class WxPayReportTest extends WxPayDataBaseTest
         self::assertEquals('签名失败', $this->getModel()->getReturnMsg());
         self::assertEquals('1415659990', $this->getModel()->getOutTradeNo());
         self::assertEquals('127.0.0.1', $this->getModel()->getUserIp());
-
-
-        self::assertTrue($this->getModel()->isSetAppId());
-        self::assertTrue($this->getModel()->isSetMchId());
-        self::assertTrue($this->getModel()->isSetNonceStr());
-        self::assertTrue($this->getModel()->isSetDeviceInfo());
-        self::assertTrue($this->getModel()->isSetErrCode());
-        self::assertTrue($this->getModel()->isSetInterfaceUrl());
-        self::assertTrue($this->getModel()->isSetExecuteTime());
-        self::assertTrue($this->getModel()->isSetTime());
-        self::assertTrue($this->getModel()->isSetErrCodeDes());
-        self::assertTrue($this->getModel()->isSetResultCode());
-        self::assertTrue($this->getModel()->isSetReturnCode());
-        self::assertTrue($this->getModel()->isSetReturnMsg());
-        self::assertTrue($this->getModel()->isSetOutTradeNo());
-        self::assertTrue($this->getModel()->isSetUserIp());
     }
 }

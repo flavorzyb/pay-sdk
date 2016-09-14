@@ -2,19 +2,22 @@
 namespace Pay\WxPay\Modules;
 
 
-class WxPayNativeAppDataTest extends WxPayDataBaseTest
+class WxPayCloseOrderTest extends WxPayDataBaseTest
 {
     /**
-     * @var WxPayNativeAppData
+     * @var WxPayCloseOrder
      */
     protected $model = null;
 
     protected function setUp()
     {
         parent::setUp();
-        $this->model = new WxPayNativeAppData();
+        $this->model = new WxPayCloseOrder();
     }
 
+    /**
+     * @return WxPayCloseOrder
+     */
     protected function getModel()
     {
         return $this->model;
@@ -23,18 +26,14 @@ class WxPayNativeAppDataTest extends WxPayDataBaseTest
     public function testOptionsIsMutable()
     {
         parent::testOptionsIsMutable();
-
-        $time = time();
         $this->getModel()->setAppId('wx71be479776815a2a');
-        $this->getModel()->setTimeStamp($time);
+        $this->getModel()->setMchId('10000100');
         $this->getModel()->setNonceStr('Vz6WsT7xm6iwJyls');
-        $this->getModel()->setPrePayId('wx201508122132221b33dfd6990431165182');
-        $this->getModel()->setPartnerId('wx71be479776815a2a');
+        $this->getModel()->setOutTradeNo('20150806125346');
 
         self::assertEquals('wx71be479776815a2a', $this->getModel()->getAppId());
-        self::assertEquals($time, $this->getModel()->getTimeStamp());
+        self::assertEquals('10000100', $this->getModel()->getMchId());
         self::assertEquals('Vz6WsT7xm6iwJyls', $this->getModel()->getNonceStr());
-        self::assertEquals('wx201508122132221b33dfd6990431165182', $this->getModel()->getPrePayId());
-        self::assertEquals('wx71be479776815a2a', $this->getModel()->getPartnerId());
+        self::assertEquals('20150806125346', $this->getModel()->getOutTradeNo());
     }
 }

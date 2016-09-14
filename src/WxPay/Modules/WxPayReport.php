@@ -18,17 +18,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getAppId()
     {
-        return $this->values['appid'];
+        return $this->get('appid');
     }
-    /**
-     * 判断微信分配的公众账号ID是否存在
-     * @return bool
-     **/
-    public function isSetAppId()
-    {
-        return array_key_exists('appid', $this->values);
-    }
-
 
     /**
      * 设置微信支付分配的商户号
@@ -44,17 +35,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getMchId()
     {
-        return $this->values['mch_id'];
+        return $this->get('mch_id');
     }
-    /**
-     * 判断微信支付分配的商户号是否存在
-     * @return bool
-     **/
-    public function isSetMchId()
-    {
-        return array_key_exists('mch_id', $this->values);
-    }
-
 
     /**
      * 设置微信支付分配的终端设备号，商户自定义
@@ -70,17 +52,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getDeviceInfo()
     {
-        return $this->values['device_info'];
+        return $this->get('device_info');
     }
-    /**
-     * 判断微信支付分配的终端设备号，商户自定义是否存在
-     * @return bool
-     **/
-    public function isSetDeviceInfo()
-    {
-        return array_key_exists('device_info', $this->values);
-    }
-
 
     /**
      * 设置随机字符串，不长于32位。推荐随机数生成算法
@@ -96,17 +69,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getNonceStr()
     {
-        return $this->values['nonce_str'];
+        return $this->get('nonce_str');
     }
-    /**
-     * 判断随机字符串，不长于32位。推荐随机数生成算法是否存在
-     * @return bool
-     **/
-    public function isSetNonceStr()
-    {
-        return array_key_exists('nonce_str', $this->values);
-    }
-
 
     /**
      * 设置上报对应的接口的完整URL，类似：https://api.mch.weixin.qq.com/pay/unifiedorder对于被扫支付，为更好的和商户共同分析一次业务行为的整体耗时情况，对于两种接入模式，请都在门店侧对一次被扫行为进行一次单独的整体上报，上报URL指定为：https://api.mch.weixin.qq.com/pay/micropay/total关于两种接入模式具体可参考本文档章节：被扫支付商户接入模式其它接口调用仍然按照调用一次，上报一次来进行。
@@ -122,17 +86,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getInterfaceUrl()
     {
-        return $this->values['interface_url'];
+        return $this->get('interface_url');
     }
-    /**
-     * 判断上报对应的接口的完整URL，类似：https://api.mch.weixin.qq.com/pay/unifiedorder对于被扫支付，为更好的和商户共同分析一次业务行为的整体耗时情况，对于两种接入模式，请都在门店侧对一次被扫行为进行一次单独的整体上报，上报URL指定为：https://api.mch.weixin.qq.com/pay/micropay/total关于两种接入模式具体可参考本文档章节：被扫支付商户接入模式其它接口调用仍然按照调用一次，上报一次来进行。是否存在
-     * @return bool
-     **/
-    public function isSetInterfaceUrl()
-    {
-        return array_key_exists('interface_url', $this->values);
-    }
-
 
     /**
      * 设置接口耗时情况，单位为毫秒
@@ -148,17 +103,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getExecuteTime()
     {
-        return $this->values['execute_time_'];
+        return $this->get('execute_time_');
     }
-    /**
-     * 判断接口耗时情况，单位为毫秒是否存在
-     * @return bool
-     **/
-    public function isSetExecuteTime()
-    {
-        return array_key_exists('execute_time_', $this->values);
-    }
-
 
     /**
      * 设置SUCCESS/FAIL此字段是通信标识，非交易标识，交易是否成功需要查看trade_state来判断
@@ -174,17 +120,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getReturnCode()
     {
-        return $this->values['return_code'];
+        return $this->get('return_code');
     }
-    /**
-     * 判断SUCCESS/FAIL此字段是通信标识，非交易标识，交易是否成功需要查看trade_state来判断是否存在
-     * @return bool
-     **/
-    public function isSetReturnCode()
-    {
-        return array_key_exists('return_code', $this->values);
-    }
-
 
     /**
      * 设置返回信息，如非空，为错误原因签名失败参数格式校验错误
@@ -200,17 +137,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getReturnMsg()
     {
-        return $this->values['return_msg'];
+        return $this->get('return_msg');
     }
-    /**
-     * 判断返回信息，如非空，为错误原因签名失败参数格式校验错误是否存在
-     * @return bool
-     **/
-    public function isSetReturnMsg()
-    {
-        return array_key_exists('return_msg', $this->values);
-    }
-
 
     /**
      * 设置SUCCESS/FAIL
@@ -226,17 +154,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getResultCode()
     {
-        return $this->values['result_code'];
+        return $this->get('result_code');
     }
-    /**
-     * 判断SUCCESS/FAIL是否存在
-     * @return bool
-     **/
-    public function isSetResultCode()
-    {
-        return array_key_exists('result_code', $this->values);
-    }
-
 
     /**
      * 设置ORDERNOTEXIST—订单不存在SYSTEMERROR—系统错误
@@ -252,17 +171,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getErrCode()
     {
-        return $this->values['err_code'];
+        return $this->get('err_code');
     }
-    /**
-     * 判断ORDERNOTEXIST—订单不存在SYSTEMERROR—系统错误是否存在
-     * @return bool
-     **/
-    public function isSetErrCode()
-    {
-        return array_key_exists('err_code', $this->values);
-    }
-
 
     /**
      * 设置结果信息描述
@@ -278,17 +188,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getErrCodeDes()
     {
-        return $this->values['err_code_des'];
+        return $this->get('err_code_des');
     }
-    /**
-     * 判断结果信息描述是否存在
-     * @return bool
-     **/
-    public function isSetErrCodeDes()
-    {
-        return array_key_exists('err_code_des', $this->values);
-    }
-
 
     /**
      * 设置商户系统内部的订单号,商户可以在上报时提供相关商户订单号方便微信支付更好的提高服务质量。
@@ -304,17 +205,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getOutTradeNo()
     {
-        return $this->values['out_trade_no'];
+        return $this->get('out_trade_no');
     }
-    /**
-     * 判断商户系统内部的订单号,商户可以在上报时提供相关商户订单号方便微信支付更好的提高服务质量。 是否存在
-     * @return bool
-     **/
-    public function isSetOutTradeNo()
-    {
-        return array_key_exists('out_trade_no', $this->values);
-    }
-
 
     /**
      * 设置发起接口调用时的机器IP
@@ -330,17 +222,8 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getUserIp()
     {
-        return $this->values['user_ip'];
+        return $this->get('user_ip');
     }
-    /**
-     * 判断发起接口调用时的机器IP 是否存在
-     * @return bool
-     **/
-    public function isSetUserIp()
-    {
-        return array_key_exists('user_ip', $this->values);
-    }
-
 
     /**
      * 设置系统时间，格式为yyyyMMddHHmmss，如2009年12月27日9点10分10秒表示为20091227091010。其他详见时间规则
@@ -356,14 +239,6 @@ class WxPayReport extends WxPayDataBase
      **/
     public function getTime()
     {
-        return $this->values['time'];
-    }
-    /**
-     * 判断系统时间，格式为yyyyMMddHHmmss，如2009年12月27日9点10分10秒表示为20091227091010。其他详见时间规则是否存在
-     * @return bool
-     **/
-    public function isSetTime()
-    {
-        return array_key_exists('time', $this->values);
+        return $this->get('time');
     }
 }

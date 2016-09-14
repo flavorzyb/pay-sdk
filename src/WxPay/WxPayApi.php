@@ -148,6 +148,7 @@ class WxPayApi
 
         $client->setSslVerifyPeer(true);
         $client->setSslVerifyHost(true);
+        $client->setCaInfo($this->config['sslCertPath']);
         $client->setHeader(false);
 
         if ($useCert && isset($this->config['sslCertPath']) && isset($this->config['sslKeyPath'])) {
@@ -225,12 +226,12 @@ class WxPayApi
             $report->setDeviceInfo($data['device_info']);
         }
 
-        if (!$report->isSetReturnCode()) {
+        if ('' == $report->getReturnCode()) {
             $this->log->error("WxPay reportCostTime Error: 缺少必填参数return_code url = $url data=" . serialize($data));
             return false;
         }
 
-        if (!$report->isSetResultCode()) {
+        if ('' == $report->getResultCode()) {
             $this->log->error("WxPay reportCostTime Error: 缺少必填参数result_code url = $url data=" . serialize($data));
             return false;
         }
@@ -291,7 +292,7 @@ class WxPayApi
     public function orderQuery(WxPayOrderQuery $orderQuery, $ip)
     {
         //检测必填参数
-        if(!($orderQuery->isSetOutTradeNo() || $orderQuery->isSetTransactionId())) {
+        if(('' == $orderQuery->getOutTradeNo()) && ('' == $orderQuery->getTransactionId())) {
             return false;
         }
 

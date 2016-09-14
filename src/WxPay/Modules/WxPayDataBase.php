@@ -14,6 +14,17 @@ abstract class WxPayDataBase
     protected $values = array();
 
     /**
+     * get value
+     * @param string $key
+     * @param string $default
+     * @return mixed|string
+     */
+    protected function get($key, $default = '')
+    {
+        return isset($this->values[$key]) ? $this->values[$key] : $default;
+    }
+
+    /**
      * 设置签名，详见签名生成算法
      * @param   string $sign
      **/
@@ -28,7 +39,7 @@ abstract class WxPayDataBase
      **/
     public function getSign()
     {
-        return $this->values['sign'];
+        return $this->get('sign');
     }
 
     /**
@@ -95,7 +106,7 @@ abstract class WxPayDataBase
             }
         }
 
-        return substr($result, 0 , -1);
+        return trim($result, '&');
     }
 
     /**

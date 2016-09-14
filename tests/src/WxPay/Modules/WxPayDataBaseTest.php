@@ -28,7 +28,7 @@ abstract class WxPayDataBaseTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException Pay\WxPay\WxPayException
+     * @expectedException \Pay\WxPay\WxPayException
      */
     public function testErrorXmlThrowsException()
     {
