@@ -46,8 +46,8 @@ class WxPay extends PayAbstract
      */
     public function __construct(array $config, Writer $logWriter)
     {
-        $this->config = $config;
         parent::__construct($logWriter);
+        $this->config = $config;
     }
 
     /**
@@ -170,8 +170,8 @@ class WxPay extends PayAbstract
         $notifyUrl  = trim($notifyUrl);
         $result     = new WxPayUnifiedOrder();
         $body = $payOrder->getGoodsName();
-        if (mb_strlen($body) > 10) {
-            $body = mb_substr($body, 0, 10) . '...';
+        if (mb_strlen($body) > 30) {
+            $body = mb_substr($body, 0, 30) . '...';
         }
         $result->setBody($body);
         $result->setAttach($payOrder->getExtra());
