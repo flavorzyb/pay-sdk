@@ -288,7 +288,7 @@ class WxPayApi
      * appid、mchid、spbill_create_ip、nonce_str不需要填入
      * @param WxPayOrderQuery $orderQuery
      * @param string $ip
-     * @return bool 成功时返回，其他抛异常
+     * @return array|bool 成功时返回，其他抛异常
      */
     public function orderQuery(WxPayOrderQuery $orderQuery, $ip)
     {

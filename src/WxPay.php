@@ -3,9 +3,11 @@ namespace Pay;
 
 use Pay\Modules\PayNotify;
 use Pay\Modules\PayOrder;
+use Pay\WxPay\Modules\WxPayConfig;
 use Pay\WxPay\Modules\WxPayNotifyReply;
 use Pay\WxPay\Modules\WxPayOrderQuery;
 use Pay\WxPay\Modules\WxPayResults;
+use Pay\WxPay\Modules\WxPayTradeState;
 use Pay\WxPay\Modules\WxPayUnifiedOrder;
 use Pay\WxPay\WxJsApiPay;
 use Pay\WxPay\WxNativePay;
@@ -18,9 +20,9 @@ class WxPay extends PayAbstract
     const EXPIRE_TIME = 7200;
     /**
      * 微信支付配置文件
-     * @var array
+     * @var WxPayConfig
      */
-    private $config = array();
+    private $config = null;
 
     /**
      *
@@ -40,11 +42,16 @@ class WxPay extends PayAbstract
     private $openId        = '';
 
     /**
+     * @var WxPayApi
+     */
+    private $wxPayApi = null;
+
+    /**
      * WxPay constructor.
-     * @param array $config
+     * @param WxPayConfig $config
      * @param Writer $logWriter
      */
-    public function __construct(array $config, Writer $logWriter)
+    public function __construct(WxPayConfig $config, Writer $logWriter)
     {
         parent::__construct($logWriter);
         $this->config = $config;
@@ -93,6 +100,25 @@ class WxPay extends PayAbstract
         $this->wxNativePay = $wxNativePay;
     }
 
+    /**
+     * @return WxPayApi
+     */
+    public function getWxPayApi()
+    {
+        if (null == $this->wxPayApi) {
+            $this->setWxPayApi(new WxPayApi($this->config, $this->getLogWriter()));
+        }
+
+        return $this->wxPayApi;
+    }
+
+    /**
+     * @param WxPayApi $wxPayApi
+     */
+    public function setWxPayApi($wxPayApi)
+    {
+        $this->wxPayApi = $wxPayApi;
+    }
 
     /**
      * 检查
@@ -124,6 +150,14 @@ class WxPay extends PayAbstract
     }
 
     /**
+     * @return string
+     */
+    public function getOpenId()
+    {
+        return $this->openId;
+    }
+
+    /**
      * 微信支付
      * @param   PayOrder $payOrder
      * @return  array | bool
@@ -131,31 +165,60 @@ class WxPay extends PayAbstract
      */
     public function pay(PayOrder $payOrder)
     {
+        return $this->_pay($payOrder, 'JSAPI');
+    }
+
+    protected function _pay(PayOrder $payOrder, $tradeType)
+    {
         if (!$this->check($payOrder)) {
             return false;
         }
 
-        $notifyUrl      = ('' != $payOrder->getNotifyUrl() ? $payOrder->getNotifyUrl() : $this->config['notify_url']);
-        $wxPayApi       = new WxPayApi($this->config, $this->getLogWriter());
+        $notifyUrl      = ('' != $payOrder->getNotifyUrl() ? $payOrder->getNotifyUrl() : $this->config->getNotifyUrl());
+        $wxPayApi       = $this->getWxPayApi();
 
         $unifiedOrder   = $this->createPayUnifiedOrder($payOrder, $notifyUrl);
-        $unifiedOrder->setTradeType("JSAPI");
-        $unifiedOrder->setOpenId($this->openId);
+
+        $tradeType = strtoupper(trim($tradeType));
+        $unifiedOrder->setTradeType($tradeType);
+        switch ($tradeType) {
+            case 'JSAPI':
+                $unifiedOrder->setOpenId($this->openId);
+                break;
+            case 'APP':
+            case 'NATIVE':
+                $unifiedOrder->setProductId($payOrder->getOrderId());
+                break;
+            default:
+                return false;
+        }
+
         // 签名
-        $unifiedOrder->setSign($unifiedOrder->createSign($this->config['key']));
+        $unifiedOrder->setSign($unifiedOrder->createSign($this->config->getKey()));
 
         $xmlString      = $unifiedOrder->toXml();
         $startTimeStamp = $wxPayApi->getMillisecond();
         $response       = $wxPayApi->postXmlCurl($xmlString, WxPayApi::UNIFIED_ORDER_URL, false);
-        $result         = WxPayResults::getValuesFromXmlString($response, $this->config['key']);
+        $result         = WxPayResults::getValuesFromXmlString($response, $this->config->getKey());
 
         if (false === $result) {
+            $this->getLogWriter()->error($tradeType . ' Error: result is false ' . $payOrder->getOrderId() . ' xml string:' . $xmlString . ' response' . serialize($response));
             return false;
         }
 
         $wxPayApi->reportCostTime($notifyUrl, $startTimeStamp, $result, $payOrder->getIp());
 
-        return $result;
+        $this->getLogWriter()->debug("{$tradeType}:" . serialize($result));
+
+        if (is_array($result) &&
+            isset($result['result_code']) && ("SUCCESS" == $result['result_code']) &&
+            isset($result['return_code']) && ("SUCCESS" == $result['return_code'])) {
+
+            return $result;
+        }
+
+        $this->getLogWriter()->error("nativePay  Error: result is fail " . $payOrder->getOrderId(). ", " . serialize($result));
+        return false;
     }
 
     /**
@@ -186,8 +249,8 @@ class WxPay extends PayAbstract
         $result->setTimeStart(date("YmdHis"));
         $result->setTimeExpire(date("YmdHis", time() + self::EXPIRE_TIME));
         $result->setNotifyUrl($notifyUrl);
-        $result->setAppId($this->config['appId']);
-        $result->setMchId($this->config['mchId']);
+        $result->setAppId($this->config->getAppId());
+        $result->setMchId($this->config->getMchId());
         $result->setSpbillCreateIp($payOrder->getIp());
         $result->setNonceStr(WxPayApi::getNonceStr());
 
@@ -216,7 +279,7 @@ class WxPay extends PayAbstract
             return false;
         }
 
-        $wxPayApi   = new WxPayApi($this->config, $this->getLogWriter());
+        $wxPayApi   = $this->getWxPayApi();
         $data = $wxPayApi->notify($xmlString);
 
         if (false === $data) {
@@ -230,8 +293,8 @@ class WxPay extends PayAbstract
 
         // 检查订单
         $orderQuery = $this->queryOrder($data['transaction_id'], $ip);
-        if (false == $orderQuery) {
-            $this->getLogWriter()->error("WxPay parseNotify Error: 校验订单失败 " . $data['transaction_id']);
+        if ((null == $orderQuery) || (!$orderQuery->isSuccess())) {
+            $this->getLogWriter()->error("WxPay parseNotify Error: 校验订单失败 " . $data['transaction_id'] . ' ' . $xmlString);
             $result = new WxPayNotifyReply();
             $result->setReturnCode("FAIL");
             $result->setReturnMsg("校验订单失败");
@@ -274,10 +337,10 @@ class WxPay extends PayAbstract
         //如果需要签名
         if((true == $needSign) &&  ("SUCCESS" == $notifyReply->getReturnCode()))
         {
-            $notifyReply->setSign($notifyReply->createSign($this->config['key']));
+            $notifyReply->setSign($notifyReply->createSign($this->config->getKey()));
         }
 
-        $wxPayApi   = new WxPayApi($this->config, $this->getLogWriter());
+        $wxPayApi   = $this->getWxPayApi();
 
         $wxPayApi->replyNotify($notifyReply->toXml());
     }
@@ -286,13 +349,13 @@ class WxPay extends PayAbstract
      * 查询订单
      * @param int $transactionId
      * @param string $ip
-     * @return bool
+     * @return WxPayTradeState | null
      */
-    private function queryOrder($transactionId, $ip)
+    public function queryOrder($transactionId, $ip)
     {
         $input      = new WxPayOrderQuery();
         $input->setTransactionId($transactionId);
-        $wxPayApi   = new WxPayApi($this->config, $this->getLogWriter());
+        $wxPayApi   = $this->getWxPayApi();
         $result     = $wxPayApi->orderQuery($input, $ip);
 
         //trade_state
@@ -300,12 +363,11 @@ class WxPay extends PayAbstract
             isset($result['result_code']) &&
             isset($result['trade_state']) &&
             ("SUCCESS" == $result['return_code']) &&
-            ("SUCCESS" == $result['result_code']) &&
-            ("SUCCESS" == $result['trade_state'])) {
-            return true;
+            ("SUCCESS" == $result['result_code'])) {
+            return new WxPayTradeState($result['trade_state']);
         }
 
-        return false;
+        return null;
     }
 
     /**
@@ -315,42 +377,7 @@ class WxPay extends PayAbstract
      */
     public function nativePay(PayOrder $payOrder)
     {
-        if (!$this->check($payOrder)) {
-            return false;
-        }
-
-        $notifyUrl      = ('' != $payOrder->getNotifyUrl() ? $payOrder->getNotifyUrl() : $this->config['notify_url']);
-        $wxPayApi   = new WxPayApi($this->config, $this->getLogWriter());
-
-        $unifiedOrder   = $this->createPayUnifiedOrder($payOrder, $notifyUrl);
-        $unifiedOrder->setTradeType("NATIVE");
-        $unifiedOrder->setProductId($payOrder->getOrderId());
-        // 签名
-        $unifiedOrder->setSign($unifiedOrder->createSign($this->config['key']));
-
-        $xmlString      = $unifiedOrder->toXml();
-        $startTimeStamp = $wxPayApi->getMillisecond();
-        $response       = $wxPayApi->postXmlCurl($xmlString, WxPayApi::UNIFIED_ORDER_URL, false);
-        $result         = WxPayResults::getValuesFromXmlString($response, $this->config['key']);
-
-        if (false === $result) {
-            $this->getLogWriter()->error("nativePay  Error: result is false " . $payOrder->getOrderId());
-            return false;
-        }
-
-        $wxPayApi->reportCostTime($notifyUrl, $startTimeStamp, $result, $payOrder->getIp());
-
-        $this->getLogWriter()->debug("wapPay:" . serialize($result));
-
-        if (is_array($result) &&
-            isset($result['result_code']) && ("SUCCESS" == $result['result_code']) &&
-            isset($result['return_code']) && ("SUCCESS" == $result['return_code'])) {
-
-            return $result;
-        }
-
-        $this->getLogWriter()->error("nativePay  Error: result is fail " . $payOrder->getOrderId());
-        return false;
+        return $this->_pay($payOrder, 'NATIVE');
     }
 
     /**
@@ -360,40 +387,7 @@ class WxPay extends PayAbstract
      */
     public function appPay(PayOrder $payOrder)
     {
-        if (!$this->check($payOrder)) {
-            return false;
-        }
-
-        $notifyUrl      = ('' != $payOrder->getNotifyUrl() ? $payOrder->getNotifyUrl() : $this->config['notify_url']);
-        $wxPayApi       = new WxPayApi($this->config, $this->getLogWriter());
-
-        $unifiedOrder   = $this->createPayUnifiedOrder($payOrder, $notifyUrl);
-        $unifiedOrder->setTradeType("APP");
-        $unifiedOrder->setProductId($payOrder->getOrderId());
-        // 签名
-        $unifiedOrder->setSign($unifiedOrder->createSign($this->config['key']));
-
-        $xmlString      = $unifiedOrder->toXml();
-        $startTimeStamp = $wxPayApi->getMillisecond();
-        $response       = $wxPayApi->postXmlCurl($xmlString, WxPayApi::UNIFIED_ORDER_URL, false);
-        $result         = WxPayResults::getValuesFromXmlString($response, $this->config['key']);
-
-        if (false === $result) {
-            $this->getLogWriter()->error("appPay  Error: result is false " . $payOrder->getOrderId());
-            return false;
-        }
-
-        $wxPayApi->reportCostTime($notifyUrl, $startTimeStamp, $result, $payOrder->getIp());
-
-        if (is_array($result) &&
-            isset($result['result_code']) && ("SUCCESS" == $result['result_code']) &&
-            isset($result['return_code']) && ("SUCCESS" == $result['return_code'])) {
-
-            return $result;
-        }
-
-        $this->getLogWriter()->error("appPay  Error: result is fail " . $payOrder->getOrderId());
-        return false;
+        return $this->_pay($payOrder, 'APP');
     }
 
     /**
