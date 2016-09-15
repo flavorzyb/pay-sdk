@@ -202,12 +202,6 @@ class AliPayTest extends \PHPUnit_Framework_TestCase
         $order->setExtra('test|group');
         $result = $this->pay->payUrl($order);
         self::assertEmpty($result);
-//        ob_start();
-//        $this->pay->pay($order);
-//        $header = get_http_header();
-//        header_remove();
-//        ob_end_clean();
-//        self::assertEquals('', $header);
     }
 
     public function testPayUrl()
@@ -220,5 +214,24 @@ class AliPayTest extends \PHPUnit_Framework_TestCase
         $this->pay->setAliPaySubmit($aliPaySubmit);
         $result = $this->pay->payUrl($order);
         self::assertEquals('http://www.alipay.com/pay', $result);
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testPay()
+    {
+        $order = $this->createPayOrder();
+        $aliPaySubmit = $this->createAliPaySubmit();
+        $aliPaySubmit->shouldReceive('buildRequestHttp')->andReturn('');
+        $aliPaySubmit->shouldReceive('parseResponse')->andReturn(['request_token'=>'201110259f7686ab763c20e630db9902166f0bfa']);
+        $aliPaySubmit->shouldReceive('buildRequestHttpURL')->andReturn('http://www.alipay.com/pay');
+        $this->pay->setAliPaySubmit($aliPaySubmit);
+        ob_start();
+        $this->pay->pay($order);
+        $result = get_http_header();
+        header_remove();
+        ob_end_clean();
+        self::assertEquals(['Location:http://www.alipay.com/pay'], $result);
     }
 }
