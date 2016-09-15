@@ -3,7 +3,6 @@ namespace Pay\AliPay;
 
 use DOMDocument;
 use Simple\Log\Writer;
-
 class AliPaySubmit extends AliPayBase
 {
     /**
@@ -13,19 +12,19 @@ class AliPaySubmit extends AliPayBase
 
     /**
      * 配置文件
-     * @var array
+     * @var AliConfig
      */
-    private $_config    = array();
+    protected $config    = null;
 
     /**
      * AliPaySubmit constructor.
-     * @param array $config
+     * @param AliConfig $config
      * @param Writer $logWriter
      */
-    public function __construct(array $config, Writer $logWriter)
+    public function __construct(AliConfig $config, Writer $logWriter)
     {
         parent::__construct($logWriter);
-        $this->_config  = $config;
+        $this->config  = $config;
     }
 
     /**
@@ -40,9 +39,9 @@ class AliPaySubmit extends AliPayBase
 
         //远程获取数据
         return $this->getHttpResponseWithPOST(self::GATEWAY_URL,
-                                            $this->_config['cert'],
+                                            $this->config->getCertPath(),
                                             $requestStr,
-                                            trim(strtolower($this->_config['input_charset'])));
+                                            trim(strtolower($this->config->getInputCharset())));
     }
 
     /**
@@ -95,7 +94,7 @@ class AliPaySubmit extends AliPayBase
         if (('alipay.wap.trade.create.direct' != $result['service']) &&
             ('alipay.wap.auth.authAndExecute' != $result['service'])) {
 
-            $result['sign_type'] = strtoupper(trim($this->_config['sign_type']));
+            $result['sign_type'] = strtoupper(trim($this->config->getSignType()));
         }
 
         return $result;
@@ -111,13 +110,13 @@ class AliPaySubmit extends AliPayBase
         //把数组所有元素，按照“参数=参数值”的模式用“&”字符拼接成字符串
         $result = $this->createString($data);
 
-        switch (strtoupper(trim($this->_config['sign_type']))) {
+        switch (strtoupper(trim($this->config->getSignType()))) {
             case "MD5" :
-                $mySign = $this->md5Sign($result, $this->_config['key']);
+                $mySign = $this->md5Sign($result, $this->config->getKey());
                 break;
             case "RSA" :
             case "0001" :
-                $mySign = $this->rsaSign($result, $this->_config['private_key_path']);
+                $mySign = $this->rsaSign($result, $this->config->getPrivateKeyPath());
                 break;
             default :
                 $mySign = "";
@@ -170,14 +169,13 @@ class AliPaySubmit extends AliPayBase
 
         if  (false == empty($result['res_data'])) {
             //解析加密部分字符串
-            switch (strtoupper(trim($this->_config['sign_type']))) {
+            switch (strtoupper(trim($this->config->getSignType()))) {
                 case '0001':
                 case 'RSA':
-                    $result['res_data'] = $this->rsaDecrypt($result['res_data'], $this->_config['private_key_path']);
+                    $result['res_data'] = $this->rsaDecrypt($result['res_data'], $this->config->getPrivateKeyPath());
                     break;
 
             }
-
             //token从res_data中解析出来（也就是说res_data中已经包含token的内容）
             $doc = new DOMDocument();
             $doc->loadXML($result['res_data']);

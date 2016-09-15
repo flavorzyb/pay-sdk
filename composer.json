@@ -39,7 +39,8 @@
     ],
 
     "files": [
-      "tests/ConfigFactory.php"
+      "tests/ConfigFactory.php",
+      "tests/func.php"
     ],
 
     "psr-4": {

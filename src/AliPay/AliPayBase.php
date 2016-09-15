@@ -9,7 +9,7 @@ class AliPayBase
     /**
      * @var Writer
      */
-    protected $logWriter = null;
+    private $logWriter = null;
 
     /**
      * AliPayBase constructor.
@@ -136,7 +136,7 @@ class AliPayBase
         return $result;
     }
 
-    protected function getClient()
+    public function getClient()
     {
         return new Client();
     }
@@ -172,7 +172,7 @@ class AliPayBase
         if ($client->exec()) {
             $result = $client->getResponse();
         } else {
-            $this->getLogWriter()->error("AliPay Post Data Error: " . $url . "  " . $postStr);
+            $this->getLogWriter()->error("AliPay Post Data Error: " . $url . "  " . serialize($postStr));
         }
 
         return $result;

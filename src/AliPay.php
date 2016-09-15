@@ -2,6 +2,7 @@
 namespace Pay;
 
 use DOMDocument;
+use Pay\AliPay\AliConfig;
 use Pay\Modules\PayNotify;
 use Pay\Modules\PayOrder;
 use Simple\Log\Writer;
@@ -14,21 +15,28 @@ class AliPay extends PayAbstract
     const VERSION   = "2.0";
     /**
      * 支付宝配置文件
-     * @var array
+     * @var AliConfig
      */
     private $config = array();
 
     /**
      * AliPay constructor.
-     * @param array $config
+     * @param AliConfig $config
      * @param Writer $logWriter
      */
-    public function __construct(array $config, Writer $logWriter)
+    public function __construct(AliConfig $config, Writer $logWriter)
     {
-        $this->config = $config;
         parent::__construct($logWriter);
+        $this->config = $config;
     }
 
+    /**
+     * @return AliPaySubmit
+     */
+    protected function createAliPaySubmit()
+    {
+        return new AliPaySubmit($this->config, $this->getLogWriter());
+    }
 
     /**
      * 支付宝支付
@@ -43,7 +51,7 @@ class AliPay extends PayAbstract
         //必填，须保证每次请求都是唯一
 
         $params         = $this->createParamToken($payOrder, $reqId);
-        $aliPaySubmit   = new AliPaySubmit($this->config, $this->getLogWriter());
+        $aliPaySubmit   = $this->createAliPaySubmit();
         $result         = $aliPaySubmit->buildRequestHttp($params);
         //URLDECODE返回的信息
         $result         = urldecode($result);
@@ -60,6 +68,13 @@ class AliPay extends PayAbstract
     }
 
     /**
+     * @return AliPayNotify
+     */
+    protected function createAliPayNotify()
+    {
+        return new AliPayNotify($this->config, $this->getLogWriter());
+    }
+    /**
      * 解析支付回调数据
      * 出现错误时返回 空数组
      * @param array $data
@@ -68,10 +83,10 @@ class AliPay extends PayAbstract
     public function parseNotify(array $data)
     {
         if (!isset($data['notify_data'])) {
-            $data['notify_data'] = '';
+            return null;
         }
 
-        $notify = new AliPayNotify($this->config, $this->getLogWriter());
+        $notify = $this->createAliPayNotify();
         if (false==$notify->verifyNotify($data)) {
             $this->getLogWriter()->error("AliPay verifyNotify Fail:" . serialize($data));
             return null;
@@ -89,7 +104,7 @@ class AliPay extends PayAbstract
     private function parseNotifyData(AliPayNotify $notify, $notifyData)
     {
         $doc = new DOMDocument();
-        switch (strtoupper(trim($this->config['sign_type']))) {
+        switch (strtoupper(trim($this->config->getSignType()))) {
             case 'MD5':
                 $doc->loadXML($notifyData);
                 break;
@@ -144,19 +159,19 @@ class AliPay extends PayAbstract
     {
         //**req_data详细信息**
         //服务器异步通知页面路径
-        $notifyUrl = ('' != $payOrder->getNotifyUrl() ? $payOrder->getNotifyUrl() : $this->config['notify_url']);
+        $notifyUrl = ('' != $payOrder->getNotifyUrl() ? $payOrder->getNotifyUrl() : $this->config->getNotifyUrl());
         //需http://格式的完整路径，不允许加?id=123这类自定义参数
 
         //页面跳转同步通知页面路径
-        $callBackUrl = ('' != $payOrder->getCallBackUrl() ? $payOrder->getCallBackUrl() : $this->config['call_back_url']);
+        $callBackUrl = ('' != $payOrder->getCallBackUrl() ? $payOrder->getCallBackUrl() : $this->config->getCallBackUrl());
         //需http://格式的完整路径，不允许加?id=123这类自定义参数
 
         //操作中断返回地址
-        $merchantUrl   = ('' != $payOrder->getMerchantUrl() ? $payOrder->getMerchantUrl() : $this->config['merchant_url']);
+        $merchantUrl   = ('' != $payOrder->getMerchantUrl() ? $payOrder->getMerchantUrl() : $this->config->getMerchantUrl());
         //用户付款中途退出返回商户的地址。需http://格式的完整路径，不允许加?id=123这类自定义参数
 
         //卖家支付宝帐户
-        $sellerEmail   = $this->config['alipay_account'];
+        $sellerEmail   = $this->config->getAccount();
         //必填
 
         //商户订单号
@@ -187,13 +202,13 @@ class AliPay extends PayAbstract
         //构造要请求的参数数组，无需改动
         return  [
                     "service"           => "alipay.wap.trade.create.direct",
-                    "partner"           => trim($this->config['partner']),
-                    "sec_id"            => trim($this->config['sign_type']),
+                    "partner"           => trim($this->config->getPartnerId()),
+                    "sec_id"            => trim($this->config->getSignType()),
                     "format"            => self::FORMAT,
                     "v"                 => self::VERSION,
                     "req_id"            => $reqId,
                     "req_data"          => $reqData,
-                    "_input_charset"    => trim(strtolower($this->config['input_charset']))
+                    "_input_charset"    => trim(strtolower($this->config->getInputCharset()))
                 ];
     }
 
@@ -213,13 +228,13 @@ class AliPay extends PayAbstract
         //构造要请求的参数数组，无需改动
         return [
                 "service"           => "alipay.wap.auth.authAndExecute",
-                "partner"           => trim($this->config['partner']),
-                "sec_id"            => trim($this->config['sign_type']),
+                "partner"           => trim($this->config->getPartnerId()),
+                "sec_id"            => trim($this->config->getSignType()),
                 "format"            => self::FORMAT,
                 "v"                 => self::VERSION,
                 "req_id"            => $reqId,
                 "req_data"          => $reqData,
-                "_input_charset"    => trim(strtolower($this->config['input_charset']))
+                "_input_charset"    => trim(strtolower($this->config->getInputCharset()))
             ];
     }
 }

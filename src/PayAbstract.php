@@ -45,7 +45,6 @@ abstract class PayAbstract
         $this->getLogWriter()->info("pay url:".$url);
         if ('' != $url) {
             header('Location:' . $url);
-            exit();
         }
     }
 
@@ -80,7 +79,7 @@ abstract class PayAbstract
             return false;
         }
 
-        if (0 >= $payOrder->getPayAmount()) {
+        if (0.01 > $payOrder->getPayAmount()) {
             $this->getLogWriter()->error("支付款不能为0");
             return false;
         }

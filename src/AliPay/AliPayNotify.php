@@ -17,19 +17,19 @@ class AliPayNotify extends AliPayBase
 
     /**
      * 配置文件
-     * @var array
+     * @var AliConfig
      */
-    private $_config = array();
+    protected $config = null;
 
     /**
      * AliPayNotify constructor.
-     * @param array $_config
+     * @param AliConfig $_config
      * @param Writer $logWriter
      */
-    public function __construct(array $_config, Writer $logWriter)
+    public function __construct(AliConfig $_config, Writer $logWriter)
     {
         parent::__construct($logWriter);
-        $this->_config = $_config;
+        $this->config = $_config;
     }
 
     /**
@@ -45,20 +45,20 @@ class AliPayNotify extends AliPayBase
             return false;
         }
 
-        //对notify_data解密
-        switch ($this->_config['sign_type']) {
-            case '0001':
-            case 'RSA':
-                $data['notify_data'] = $this->rsaDecrypt($data['notify_data'], $this->_config['private_key_path']);
-                break;
-        }
-
         if (!isset($data['notify_data'])) {
             return false;
         }
 
         if (!isset($data["sign"])) {
             return false;
+        }
+
+        //对notify_data解密
+        switch ($this->config->getSignType()) {
+            case '0001':
+            case 'RSA':
+                $data['notify_data'] = $this->rsaDecrypt($data['notify_data'], $this->config->getPrivateKeyPath());
+                break;
         }
 
         //notify_id从decrypt_post_para中解析出来（也就是说decrypt_post_para中已经包含notify_id的内容）
@@ -71,6 +71,7 @@ class AliPayNotify extends AliPayBase
         if (! empty($notify_id)) {
             $responseTxt = $this->getResponse($notify_id);
         }
+
 
         //生成签名结果
         $isSign = $this->getSignVerify($data, $data["sign"], false);
@@ -88,7 +89,7 @@ class AliPayNotify extends AliPayBase
      */
     public function decrypt($str)
     {
-        return $this->rsaDecrypt($str, trim($this->_config['private_key_path']));
+        return $this->rsaDecrypt($str, trim($this->config->getPrivateKeyPath()));
     }
 
     /**
@@ -102,8 +103,8 @@ class AliPayNotify extends AliPayBase
      * @return  string              服务器ATN结果
      */
     private function getResponse($notifyId) {
-        $transport  = strtolower(trim($this->_config['transport']));
-        $partner    = trim($this->_config['partner']);
+        $transport  = strtolower(trim($this->config->getTransport()));
+        $partner    = trim($this->config->getPartnerId());
         $verifyUrl  = self::HTTP_VERIFY_URL;
 
         if('https' == $transport) {
@@ -112,7 +113,7 @@ class AliPayNotify extends AliPayBase
 
         $verifyUrl = $verifyUrl."partner=" . $partner . "&notify_id=" . $notifyId;
 
-        return $this->getHttpResponseWithGET($verifyUrl, $this->_config['cert']);
+        return $this->getHttpResponseWithGET($verifyUrl, $this->config->getCertPath());
     }
 
     /**
@@ -122,7 +123,7 @@ class AliPayNotify extends AliPayBase
      * @param   bool    $isSort 是否对待签名数组排序
      * @return  bool            签名验证结果
      */
-    private function getSignVerify($data, $sign, $isSort) {
+    protected function getSignVerify($data, $sign, $isSort) {
         //除去待签名参数数组中的空值和签名参数
         $data = $this->filter($data);
 
@@ -137,13 +138,13 @@ class AliPayNotify extends AliPayBase
         $str    = $this->createString($data);
 
         $isSgin = false;
-        switch (strtoupper(trim($this->_config['sign_type']))) {
+        switch (strtoupper(trim($this->config->getSignType()))) {
             case "MD5" :
-                $isSgin = $this->md5Verify($str, $sign, $this->_config['key']);
+                $isSgin = $this->md5Verify($str, $sign, $this->config->getKey());
                 break;
-            case "RSA" :
             case "0001" :
-                $isSgin = $this->rsaVerify($str, trim($this->_config['ali_public_key_path']), $sign);
+            case "RSA" :
+                $isSgin = $this->rsaVerify($str, trim($this->config->getPublicKeyPath()), $sign);
                 break;
         }
 
