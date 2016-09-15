@@ -1,10 +1,16 @@
 <?php
 namespace Pay\WxPay;
 
+use Pay\WxPay\Modules\WxPayCheckName;
+use Pay\WxPay\Modules\WxPayCloseOrder;
 use Pay\WxPay\Modules\WxPayOrderQuery;
+use Pay\WxPay\Modules\WxPayRefund;
+use Pay\WxPay\Modules\WxPayRefundQuery;
 use Pay\WxPay\Modules\WxPayReport;
 use Pay\WxPay\Modules\WxPayResults;
 use Pay\WxPay\Modules\WxPayConfig;
+use Pay\WxPay\Modules\WxPayTransfer;
+use Pay\WxPay\Modules\WxPayUnifiedOrder;
 use Simple\Http\Client;
 use Simple\Log\Writer;
 
@@ -24,19 +30,28 @@ class WxPayApi
     const ORDER_QUERY_URL   = "https://api.mch.weixin.qq.com/pay/orderquery";
 
     /**
+     * 关闭订单
+     */
+    const CLOSED_ORDER_URL  = 'https://api.mch.weixin.qq.com/pay/closeorder';
+    /**
+     * 申请退款
+     */
+    const REFUND_URL  = 'https://api.mch.weixin.qq.com/secapi/pay/refund';
+
+    /**
+     * 查询退款
+     */
+    const REFUND_QUERY_URL  = 'https://api.mch.weixin.qq.com/pay/refundquery';
+
+    /**
+     * 企业付款
+     */
+    const TRANSFERS_URL  ='https://api.mch.weixin.qq.com/mmpaymkttransfers/promotion/transfers';
+
+    /**
      * 随机字符串 32 位
      */
     const NONCE_STRING_LENGTH = 32;
-
-    /**
-     * curl time out
-     */
-    const CURL_TIME_OUT     = 6;
-
-    /**
-     * 重试次数
-     */
-    const TRY_NUMBER        = 3;
 
     /**
      * 配置文件
@@ -48,11 +63,6 @@ class WxPayApi
      * @var Writer
      */
     protected $log = null;
-
-    /**
-     * @var Client
-     */
-    protected $client = null;
 
     /**
      * @return Client
@@ -128,7 +138,7 @@ class WxPayApi
      * @param bool $useCert 是否需要证书，默认不需要
      * @return string
      */
-    public function postXmlCurl($xml, $url, $useCert = false)
+    protected function postXmlCurl($xml, $url, $useCert = false)
     {
         $xml        = trim($xml);
         $url        = trim($url);
@@ -237,6 +247,8 @@ class WxPayApi
             return false;
         }
 
+        $this->log->info("WxPay reportCostTime url = $url data=" . serialize($data));
+
         $report->setAppId($this->config->getAppId());
         $report->setMchId($this->config->getMchId());
         $report->setNonceStr($this->getNonceStr());
@@ -283,6 +295,53 @@ class WxPayApi
     }
 
     /**
+     * 统一下单，WxPayUnifiedOrder中out_trade_no、body、total_fee、trade_type必填
+     *
+     * @param WxPayUnifiedOrder $order
+     * @param $ip
+     * @return array|bool|false
+     */
+    public function unifiedOrder(WxPayUnifiedOrder $order, $ip)
+    {
+        //检测必填参数
+        if (('' == $order->getOutTradeNo())
+            || ('' == $order->getBody())
+            || (0 == $order->getTotalFee())
+            || ('' == $order->getTradeType())) {
+            return false;
+        }
+
+        if (('JSAPI' == $order->getTradeType()) && ('' == $order->getOpenId())) {
+            return false;
+        }
+
+        if (('NATIVE' == $order->getTradeType()) && ('' == $order->getProductId())) {
+            return false;
+        }
+
+        $order->setAppId($this->config->getAppId());//公众账号ID
+        $order->setMchId($this->config->getMchId());//商户号
+        $order->setNonceStr(self::getNonceStr());//随机字符串
+
+        $order->setSign($order->createSign($this->config->getKey()));//签名
+
+        $xmlString      = $order->toXml();
+
+        $startTimeStamp = self::getMillisecond();//请求开始时间
+        $response = $this->postXmlCurl($xmlString, self::UNIFIED_ORDER_URL, false);
+
+        if (false === $response) {
+            return false;
+        }
+
+        $result = WxPayResults::getValuesFromXmlString($response, $this->config->getKey());
+
+        $this->reportCostTime(self::ORDER_QUERY_URL, $startTimeStamp, $result, $ip);//上报请求花费时间
+
+        return $result;
+    }
+
+    /**
      *
      * 查询订单，WxPayOrderQuery中out_trade_no、transaction_id至少填一个
      * appid、mchid、spbill_create_ip、nonce_str不需要填入
@@ -308,7 +367,185 @@ class WxPayApi
         $startTimeStamp = self::getMillisecond();//请求开始时间
         $response = $this->postXmlCurl($xmlString, self::ORDER_QUERY_URL, false);
 
+        if (false === $response) {
+            return false;
+        }
+
         $result = WxPayResults::getValuesFromXmlString($response, $this->config->getKey());
+
+        $this->reportCostTime(self::ORDER_QUERY_URL, $startTimeStamp, $result, $ip);//上报请求花费时间
+
+        return $result;
+    }
+
+    /**
+     * 关闭订单，WxPayCloseOrder中out_trade_no必填
+     * @param WxPayCloseOrder $closeOrder
+     * @param string $ip
+     * @return array|bool|false
+     */
+    public function closeOrder(WxPayCloseOrder $closeOrder, $ip)
+    {
+        //检测必填参数
+        if('' == $closeOrder->getOutTradeNo()) {
+            return false;
+        }
+
+        $closeOrder->setAppId($this->config->getAppId());//公众账号ID
+        $closeOrder->setMchId($this->config->getMchId());//商户号
+        $closeOrder->setNonceStr(self::getNonceStr());//随机字符串
+
+        $closeOrder->setSign($closeOrder->createSign($this->config->getKey()));//签名
+
+        $xmlString      = $closeOrder->toXml();
+
+        $startTimeStamp = self::getMillisecond();//请求开始时间
+        $response = $this->postXmlCurl($xmlString, self::CLOSED_ORDER_URL, false);
+
+        if (false === $response) {
+            return false;
+        }
+
+        $result = WxPayResults::getValuesFromXmlString($response, $this->config->getKey());
+
+        $this->reportCostTime(self::ORDER_QUERY_URL, $startTimeStamp, $result, $ip);//上报请求花费时间
+
+        return $result;
+    }
+
+    /**
+     * 申请退款，WxPayRefund中out_trade_no、transaction_id至少填一个且
+     * out_refund_no、total_fee、refund_fee、op_user_id为必填参数
+     *
+     * @param WxPayRefund $refund
+     * @param string $ip
+     * @return array|bool|false
+     */
+    public function refund(WxPayRefund $refund, $ip)
+    {
+        //检测必填参数
+        if(('' == $refund->getOutTradeNo()) && ('' == $refund->getTransactionId())) {
+            return false;
+        }
+
+        if (('' == $refund->getOutRefundNo())
+            || (0 == $refund->getTotalFee())
+            || (0 == $refund->getRefundFee())
+            || ('' == $refund->getOpUserId())) {
+            return false;
+        }
+
+        $refund->setAppId($this->config->getAppId());//公众账号ID
+        $refund->setMchId($this->config->getMchId());//商户号
+        $refund->setNonceStr(self::getNonceStr());//随机字符串
+
+        $refund->setSign($refund->createSign($this->config->getKey()));//签名
+
+        $xmlString      = $refund->toXml();
+
+        $startTimeStamp = self::getMillisecond();//请求开始时间
+        $response = $this->postXmlCurl($xmlString, self::REFUND_URL, true);
+
+        if (false === $response) {
+            return false;
+        }
+
+        $result = WxPayResults::getValuesFromXmlString($response, $this->config->getKey());
+
+        $this->reportCostTime(self::ORDER_QUERY_URL, $startTimeStamp, $result, $ip);//上报请求花费时间
+
+        return $result;
+    }
+
+    /**
+     * 查询退款
+     * 提交退款申请后，通过调用该接口查询退款状态。退款有一定延时，
+     * 用零钱支付的退款20分钟内到账，银行卡支付的退款3个工作日后重新查询退款状态。
+     * WxPayRefundQuery中out_refund_no、out_trade_no、transaction_id、refund_id四个参数必填一个
+     *
+     * @param WxPayRefundQuery $query
+     * @param string $ip
+     * @return array|bool|false
+     */
+    public function refundQuery(WxPayRefundQuery $query, $ip)
+    {
+        //检测必填参数
+        if(('' == $query->getOutTradeNo())
+            && ('' == $query->getTransactionId())
+            && ('' == $query->getOutRefundNo())
+            && ('' == $query->getRefundId())) {
+            return false;
+        }
+
+        $query->setAppId($this->config->getAppId());//公众账号ID
+        $query->setMchId($this->config->getMchId());//商户号
+        $query->setNonceStr(self::getNonceStr());//随机字符串
+
+        $query->setSign($query->createSign($this->config->getKey()));//签名
+
+        $xmlString      = $query->toXml();
+
+        $startTimeStamp = self::getMillisecond();//请求开始时间
+        $response = $this->postXmlCurl($xmlString, self::REFUND_QUERY_URL, false);
+
+        if (false === $response) {
+            return false;
+        }
+
+        $result = WxPayResults::getValuesFromXmlString($response, $this->config->getKey());
+
+        $this->reportCostTime(self::ORDER_QUERY_URL, $startTimeStamp, $result, $ip);//上报请求花费时间
+
+        return $result;
+    }
+
+    /**
+     * 企业付款业务
+     * ◆ 给同一个实名用户付款，单笔单日限额2W/2W
+     * ◆ 给同一个非实名用户付款，单笔单日限额2000/2000
+     * ◆ 一个商户同一日付款总额限额100W
+     * ◆ 单笔最小金额默认为1元
+     * ◆ 每个用户每天最多可付款10次，可以在商户平台--API安全进行设置
+     * ◆ 给同一个用户付款时间间隔不得低于15秒
+     *
+     * 必填项目 partner_trade_no openid check_name amount desc spbill_create_ip
+     * 如果check_name设置为FORCE_CHECK或OPTION_CHECK，则必填用户真实姓名
+     * @param WxPayTransfer $transfer
+     * @param $ip
+     * @return array|bool|false
+     */
+    public function transfers(WxPayTransfer $transfer, $ip)
+    {
+        //检测必填参数
+        if (('' == $transfer->getPartnerTradeNo()) ||
+            ('' == $transfer->getOpenId()) ||
+            (0 == $transfer->getAmount()) ||
+            ('' == $transfer->getDescription()) ||
+            ('' == $transfer->getSpbillCreateIp())) {
+            return false;
+        }
+
+        //如果check_name设置为FORCE_CHECK或OPTION_CHECK，则必填用户真实姓名
+        if (($transfer->getCheckName() != WxPayCheckName::NO_CHECK) && ('' == $transfer->getReUserName())) {
+            return false;
+        }
+
+        $transfer->setAppId($this->config->getAppId());//公众账号ID
+        $transfer->setMchId($this->config->getMchId());//商户号
+        $transfer->setNonceStr(self::getNonceStr());//随机字符串
+
+        $transfer->setSign($transfer->createSign($this->config->getKey()));//签名
+
+        $xmlString      = $transfer->toXml();
+
+        $startTimeStamp = self::getMillisecond();//请求开始时间
+        $response = $this->postXmlCurl($xmlString, self::TRANSFERS_URL, true);
+
+        if (false === $response) {
+            return false;
+        }
+
+        $result = WxPayResults::getValuesFromXmlString($response, $this->config->getKey(), false);
 
         $this->reportCostTime(self::ORDER_QUERY_URL, $startTimeStamp, $result, $ip);//上报请求花费时间
 

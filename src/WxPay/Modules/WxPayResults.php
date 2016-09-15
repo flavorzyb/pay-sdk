@@ -44,14 +44,19 @@ class WxPayResults extends  WxPayDataBase
      * 如果签名验证失败，则返回false
      * @param string $xml
      * @param string $key
+     * @param bool $isSign
      * @return array | false
      */
-    public static function getValuesFromXmlString($xml, $key)
+    public static function getValuesFromXmlString($xml, $key, $isSign = true)
     {
         $result = new self();
         $result->initValuesFromXml($xml);
 
         if(isset($result->values['return_code']) && ('SUCCESS' != $result->values['return_code'])) {
+            return $result->getValues();
+        }
+
+        if (!$isSign) {
             return $result->getValues();
         }
 

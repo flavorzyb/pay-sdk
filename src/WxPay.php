@@ -160,15 +160,22 @@ class WxPay extends PayAbstract
     /**
      * 微信支付
      * @param   PayOrder $payOrder
+     * @param string $ip
      * @return  array | bool
      * @override
      */
-    public function pay(PayOrder $payOrder)
+    public function pay(PayOrder $payOrder, $ip)
     {
-        return $this->_pay($payOrder, 'JSAPI');
+        return $this->_pay($payOrder, 'JSAPI', $ip);
     }
 
-    protected function _pay(PayOrder $payOrder, $tradeType)
+    /**
+     * @param PayOrder $payOrder
+     * @param string $tradeType
+     * @param string $ip
+     * @return array|bool|false
+     */
+    protected function _pay(PayOrder $payOrder, $tradeType, $ip)
     {
         if (!$this->check($payOrder)) {
             return false;
@@ -193,20 +200,11 @@ class WxPay extends PayAbstract
                 return false;
         }
 
-        // 签名
-        $unifiedOrder->setSign($unifiedOrder->createSign($this->config->getKey()));
-
-        $xmlString      = $unifiedOrder->toXml();
-        $startTimeStamp = $wxPayApi->getMillisecond();
-        $response       = $wxPayApi->postXmlCurl($xmlString, WxPayApi::UNIFIED_ORDER_URL, false);
-        $result         = WxPayResults::getValuesFromXmlString($response, $this->config->getKey());
+        $result = $wxPayApi->unifiedOrder($unifiedOrder, $ip);
 
         if (false === $result) {
-            $this->getLogWriter()->error($tradeType . ' Error: result is false ' . $payOrder->getOrderId() . ' xml string:' . $xmlString . ' response' . serialize($response));
             return false;
         }
-
-        $wxPayApi->reportCostTime($notifyUrl, $startTimeStamp, $result, $payOrder->getIp());
 
         $this->getLogWriter()->debug("{$tradeType}:" . serialize($result));
 
@@ -217,7 +215,7 @@ class WxPay extends PayAbstract
             return $result;
         }
 
-        $this->getLogWriter()->error("nativePay  Error: result is fail " . $payOrder->getOrderId(). ", " . serialize($result));
+        $this->getLogWriter()->error($tradeType. " Error: result is fail " . $payOrder->getOrderId(). ", " . serialize($result));
         return false;
     }
 
@@ -249,10 +247,7 @@ class WxPay extends PayAbstract
         $result->setTimeStart(date("YmdHis"));
         $result->setTimeExpire(date("YmdHis", time() + self::EXPIRE_TIME));
         $result->setNotifyUrl($notifyUrl);
-        $result->setAppId($this->config->getAppId());
-        $result->setMchId($this->config->getMchId());
         $result->setSpbillCreateIp($payOrder->getIp());
-        $result->setNonceStr(WxPayApi::getNonceStr());
 
         return $result;
     }
@@ -373,21 +368,23 @@ class WxPay extends PayAbstract
     /**
      * wap 静态支付
      * @param PayOrder $payOrder
+     * @param string $ip
      * @return  array | bool
      */
-    public function nativePay(PayOrder $payOrder)
+    public function nativePay(PayOrder $payOrder, $ip)
     {
-        return $this->_pay($payOrder, 'NATIVE');
+        return $this->_pay($payOrder, 'NATIVE', $ip);
     }
 
     /**
      * wap 静态支付
      * @param PayOrder $payOrder
+     * @param string $ip
      * @return  array | bool
      */
-    public function appPay(PayOrder $payOrder)
+    public function appPay(PayOrder $payOrder, $ip)
     {
-        return $this->_pay($payOrder, 'APP');
+        return $this->_pay($payOrder, 'APP', $ip);
     }
 
     /**

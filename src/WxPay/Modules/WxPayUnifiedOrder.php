@@ -171,7 +171,7 @@ class WxPayUnifiedOrder extends WxPayDataBase
 
     /**
      * 设置订单总金额，只能为整数，详见支付金额
-     * @param string $value
+     * @param int $value
      **/
     public function setTotalFee($value)
     {
@@ -180,11 +180,11 @@ class WxPayUnifiedOrder extends WxPayDataBase
 
     /**
      * 获取订单总金额，只能为整数，详见支付金额的值
-     * @return string
+     * @return int
      **/
     public function getTotalFee()
     {
-        return $this->get('total_fee');
+        return intval($this->get('total_fee', 0));
     }
 
     /**
