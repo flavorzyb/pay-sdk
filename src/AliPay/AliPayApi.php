@@ -1,18 +1,54 @@
 <?php
 namespace Pay\AliPay;
 
+use Pay\AliPay\Modules\AliPayBase;
+use Pay\AliPay\Modules\AliPayCharset;
+use Pay\AliPay\Modules\AliPayRequest;
 use Pay\AliPay\Modules\AliPayTradeCloseRequest;
 use Pay\AliPay\Modules\AliPayTradeQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeRefundQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeRefundRequest;
 use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
+use Simple\Log\Writer;
 
 class AliPayApi
 {
     /**
-     * 外部商户创建订单并支付
+     * @var AliConfig
      */
-    const GATE_WAY_URL = 'https://openapi.alipay.com/gateway.do';
+    private $config = null;
+
+    /**
+     * @var Writer
+     */
+    private $logWriter = null;
+
+    /**
+     * AliPayApi constructor.
+     * @param AliConfig $config
+     * @param Writer $writer
+     */
+    public function __construct(AliConfig $config, Writer $writer)
+    {
+        $this->config = $config;
+        $this->logWriter = $writer;
+    }
+
+    /**
+     * @return Writer
+     */
+    protected function getLogWriter()
+    {
+        return $this->logWriter;
+    }
+
+    /**
+     * @return AliConfig
+     */
+    protected function getConfig()
+    {
+        return $this->config;
+    }
 
     /**
      * 除去数组中的空值和签名参数
@@ -24,7 +60,7 @@ class AliPayApi
         $result = array();
 
         foreach ($data as $key => $value) {
-            if (!(('sign' == $key) || ('sign_type' == $key) || ('' == $value))) {
+            if (('sign' != $key) && ('' != $value)) {
                 $result[$key]   = $value;
             }
         }
@@ -33,15 +69,54 @@ class AliPayApi
     }
 
     /**
-     * 对数组排序
-     * @param array $data   排序前的数组
-     * @return string       排序后的数组
+     * 将数组签名
+     * @param array $data
+     * @return string
      */
-    protected function sort(array $data)
-    {
+    protected function generateSign(array $data) {
+        return $this->sign($this->getSignContent($data));
+    }
+
+    /**
+     * 将字符串签名
+     * @param string $data
+     * @return string
+     * @throws AliPayException
+     */
+    protected function sign($data) {
+        if (!is_file($this->getConfig()->getPrivateKeyPath())) {
+            throw new AliPayException('RSA私钥文件不存在');
+        }
+
+        $priKey = trim(file_get_contents($this->getConfig()->getPrivateKeyPath()));
+        $res = openssl_get_privatekey($priKey);
+        if (!$res) {
+            throw new AliPayException('您使用的私钥格式错误，请检查RSA私钥配置');
+        }
+
+        openssl_sign($data, $sign, $res);
+
+        openssl_free_key($res);
+        $sign = base64_encode($sign);
+        return $sign;
+    }
+
+    /**
+     * 拼接签名的数据
+     * @param array $data
+     * @return string
+     */
+    protected function getSignContent(array $data) {
+        $data = $this->filter($data);
         ksort($data);
         reset($data);
-        return $data;
+        $result = '';
+
+        foreach ($data as $k => $v) {
+            $result .= "{$k}={$v}&";
+        }
+
+        return substr($result, 0, -1);
     }
 
     /**
@@ -106,8 +181,104 @@ class AliPayApi
         return $source;
     }
 
+    protected function getBaseParams(AliPayBase $request)
+    {
+        $result = [];
+        $result['app_id'] = $request->getAppId();
+        $result['method'] = $request->getMethod();
+        $result['format'] = $request->getFormat();
+        $result['charset'] = $request->getCharset()->getValue();
+        $result['sign_type'] = $request->getSignType();
+        $result['sign'] = $request->getSign();
+        $result['timestamp'] = $request->getTimeStamp();
+        $result['version'] = $request->getVersion();
+
+        return $result;
+    }
+
+    protected function getRequestParams(AliPayRequest $request)
+    {
+        $result = $this->getBaseParams($request);
+        $result['biz_content'] = $request->getBizContent();
+
+        return $result;
+    }
+
+    protected function getWapPayRequestParams(AliPayTradeWapPayRequest $request)
+    {
+        $result = $this->getRequestParams($request);
+        if ('' != $request->getNotifyUrl()) {
+            $result['notify_url'] = $request->getNotifyUrl();
+        }
+
+        if ('' != $request->getReturnUrl()) {
+            $result['return_url'] = $request->getReturnUrl();
+        }
+
+        return $result;
+    }
+
+    /**
+     * 建立请求，以表单HTML形式构造（默认）
+     * @param array $data
+     * @param AliPayBase $request
+     * @return string
+     */
+    protected function buildRequestForm(array $data, AliPayBase $request) {
+        $result = "<form id='alipaysubmit' name='alipaysubmit' action='".$this->getConfig()->getGateWayUrl()."?charset=".trim($request->getCharset()->getValue())."' method='POST'>";
+
+        foreach ($data as $k => $v) {
+            if ('' != $v) {
+                $v = str_replace("'","&apos;",$v);
+                $result.= "<input type='hidden' name='".$k."' value='".$v."'/>";
+            }
+        }
+
+        //submit按钮控件请不要含有name属性
+        $result .= "<input type='submit' value='ok' style='display:none;''></form>";
+        $result .= "<script>document.forms['alipaysubmit'].submit();</script>";
+        return $result;
+    }
+
+    /**
+     * init AliPayBase
+     * @param AliPayBase $request
+     * @return AliPayBase
+     */
+    protected function initAliPayBase(AliPayBase $request)
+    {
+        $config = $this->getConfig();
+        $request->setAppId($config->getAppId());
+        $request->setCharset(AliPayCharset::createUTF8Charset());
+        $request->setTimeStamp(date('Y-m-d H:i:s'));
+        return $request;
+    }
+
+    /**
+     * init AliPayTradeWapPayRequest
+     * @param AliPayTradeWapPayRequest $request
+     * @return AliPayTradeWapPayRequest
+     */
+    protected function initAliPayTradeWapPayRequest(AliPayTradeWapPayRequest $request)
+    {
+        $config = $this->getConfig();
+        $request = $this->initAliPayBase($request);
+        $request->setNotifyUrl($config->getNotifyUrl());
+        $request->setReturnUrl($config->getNotifyUrl());
+        $request->setSellerId($config->getSellerId());
+
+        return $request;
+    }
+
+    /**
+     *
+     * @param AliPayTradeWapPayRequest $request
+     * @return bool|string
+     */
     public function pay(AliPayTradeWapPayRequest $request)
     {
+        $request = $this->initAliPayTradeWapPayRequest($request);
+
         if (('' == $request->getSubject()) ||
             ('' == $request->getOutTradeNo()) ||
             (0.01 > $request->getTotalAmount()) ||
@@ -115,7 +286,10 @@ class AliPayApi
             return false;
         }
 
-
+        $data = $this->getWapPayRequestParams($request);
+        //待签名字符串
+        $data['sign'] = $this->generateSign($data);
+        return $this->buildRequestForm($data, $request);
     }
 
     public function orderQuery(AliPayTradeQueryRequest $request)

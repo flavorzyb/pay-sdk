@@ -41,9 +41,11 @@ class ConfigFactory
         $result->setPrivateKeyPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR .'rsa_private_key.pem');
         $result->setPublicKeyPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR . 'alipay_public_key.pem');
 
-        $result->setNotifyUrl('/Mall/PayResponse/wxPay');
-        $result->setCallBackUrl('/Mall/PayResponse/index');
-        $result->setMerchantUrl('/Mall/PayResponse/interrupt');
+        $result->setNotifyUrl('http://192.168.0.105/test/notify.php');
+        $result->setCallBackUrl('http://192.168.0.105/test/notify.php');
+        $result->setMerchantUrl('http://192.168.0.105/test/notify.php');
+        $result->setSellerId('2088102175865018');
+        $result->setGateWayUrl('https://openapi.alipaydev.com/gateway.do');
 
         return $result;
     }
