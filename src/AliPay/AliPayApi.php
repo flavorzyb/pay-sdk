@@ -127,7 +127,11 @@ class AliPayApi
      */
     protected function rsaVerify(array $data) {
         $sign = $data['sign'];
-        var_dump($this->getSignContent($data), $this->verify($this->getSignContent($data), $sign));
+
+        if (isset($data['sign_type'])) {
+            unset($data['sign_type']);
+        }
+
         return $this->verify($this->getSignContent($data), $sign);
     }
 
@@ -140,14 +144,14 @@ class AliPayApi
      */
     protected function verify($data, $sign) {
         if (!is_file($this->getConfig()->getPublicKeyPath())) {
-            throw new AliPayException('RSA私钥文件不存在');
+            throw new AliPayException('RSA公钥文件不存在');
         }
 
         //读取公钥文件
-        $pubKey = file_get_contents($this->getConfig()->getPublicKeyPath());
-
+        $pubKey = trim(file_get_contents($this->getConfig()->getPublicKeyPath()));
         //转换为openssl格式密钥
         $res = openssl_get_publickey($pubKey);
+
         if (!$res) {
             throw new AliPayException('支付宝RSA公钥错误。请检查公钥文件格式是否正确');
         }
@@ -159,69 +163,69 @@ class AliPayApi
 
         return $result;
     }
-
-
-    /**
-     * 加密方法
-     * @param string $str
-     * @return string
-     */
-    protected function encrypt($str,$screct_key){
-        //AES, 128 模式加密数据 CBC
-        $screct_key = base64_decode($screct_key);
-        $str = trim($str);
-        $str = $this->addPKCS7Padding($str);
-        mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128,MCRYPT_MODE_CBC),1);
-        $encrypt_str =  mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $screct_key, $str, MCRYPT_MODE_CBC);
-        return base64_encode($encrypt_str);
-    }
-
-    /**
-     * 解密方法
-     * @param string $str
-     * @return string
-     */
-    protected function decrypt($str,$screct_key){
-        //AES, 128 模式加密数据 CBC
-        $str = base64_decode($str);
-        $screct_key = base64_decode($screct_key);
-        mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128,MCRYPT_MODE_CBC),1);
-        $encrypt_str =  mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $screct_key, $str, MCRYPT_MODE_CBC);
-        $encrypt_str = trim($encrypt_str);
-
-        $encrypt_str = $this->stripPKSC7Padding($encrypt_str);
-        return $encrypt_str;
-    }
-
-    /**
-     * 填充算法
-     * @param string $source
-     * @return string
-     */
-    protected function addPKCS7Padding($source){
-        $source = trim($source);
-        $block = mcrypt_get_block_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
-
-        $pad = $block - (strlen($source) % $block);
-        if ($pad <= $block) {
-            $char = chr($pad);
-            $source .= str_repeat($char, $pad);
-        }
-        return $source;
-    }
-    /**
-     * 移去填充算法
-     * @param string $source
-     * @return string
-     */
-    protected function stripPKSC7Padding($source){
-        $source = trim($source);
-        $char = substr($source, -1);
-        $num = ord($char);
-        if($num==62)return $source;
-        $source = substr($source,0,-$num);
-        return $source;
-    }
+//
+//
+//    /**
+//     * 加密方法
+//     * @param string $str
+//     * @return string
+//     */
+//    protected function encrypt($str,$screct_key){
+//        //AES, 128 模式加密数据 CBC
+//        $screct_key = base64_decode($screct_key);
+//        $str = trim($str);
+//        $str = $this->addPKCS7Padding($str);
+//        mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128,MCRYPT_MODE_CBC),1);
+//        $encrypt_str =  mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $screct_key, $str, MCRYPT_MODE_CBC);
+//        return base64_encode($encrypt_str);
+//    }
+//
+//    /**
+//     * 解密方法
+//     * @param string $str
+//     * @return string
+//     */
+//    protected function decrypt($str,$screct_key){
+//        //AES, 128 模式加密数据 CBC
+//        $str = base64_decode($str);
+//        $screct_key = base64_decode($screct_key);
+//        mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128,MCRYPT_MODE_CBC),1);
+//        $encrypt_str =  mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $screct_key, $str, MCRYPT_MODE_CBC);
+//        $encrypt_str = trim($encrypt_str);
+//
+//        $encrypt_str = $this->stripPKSC7Padding($encrypt_str);
+//        return $encrypt_str;
+//    }
+//
+//    /**
+//     * 填充算法
+//     * @param string $source
+//     * @return string
+//     */
+//    protected function addPKCS7Padding($source){
+//        $source = trim($source);
+//        $block = mcrypt_get_block_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
+//
+//        $pad = $block - (strlen($source) % $block);
+//        if ($pad <= $block) {
+//            $char = chr($pad);
+//            $source .= str_repeat($char, $pad);
+//        }
+//        return $source;
+//    }
+//    /**
+//     * 移去填充算法
+//     * @param string $source
+//     * @return string
+//     */
+//    protected function stripPKSC7Padding($source){
+//        $source = trim($source);
+//        $char = substr($source, -1);
+//        $num = ord($char);
+//        if($num==62)return $source;
+//        $source = substr($source,0,-$num);
+//        return $source;
+//    }
 
     protected function getBaseParams(AliPayBase $request)
     {
@@ -337,6 +341,7 @@ class AliPayApi
     public function parsePayReturnResult(array $data)
     {
         if (!$this->rsaVerify($data)) {
+            $this->getLogWriter()->error("parsePayReturnResult rsaVerify fail: " . serialize($data));
             return null;
         }
 

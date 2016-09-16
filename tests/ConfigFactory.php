@@ -38,7 +38,7 @@ class ConfigFactory
     {
         $result = new AliConfig();
         $result->setAppId('2016091600523436');
-        $result->setPrivateKeyPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR .'rsa_private_key.pem');
+        $result->setPrivateKeyPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR .'app_private_key.pem');
         $result->setPublicKeyPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR . 'alipay_public_key.pem');
 
         $result->setNotifyUrl('http://192.168.0.105/test/notify.php');
