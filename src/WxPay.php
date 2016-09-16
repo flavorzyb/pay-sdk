@@ -6,7 +6,6 @@ use Pay\Modules\PayOrder;
 use Pay\WxPay\Modules\WxPayConfig;
 use Pay\WxPay\Modules\WxPayNotifyReply;
 use Pay\WxPay\Modules\WxPayOrderQuery;
-use Pay\WxPay\Modules\WxPayResults;
 use Pay\WxPay\Modules\WxPayTradeState;
 use Pay\WxPay\Modules\WxPayUnifiedOrder;
 use Pay\WxPay\WxJsApiPay;

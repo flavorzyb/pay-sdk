@@ -30,12 +30,17 @@ class WxPayApiMock extends WxPayApi
     {
         return parent::postXmlCurl($xml, $url, $useCert);
     }
+
+    public function reportCostTime($url, $startTimeStamp, $data, $clientIp)
+    {
+        return parent::reportCostTime($url, $startTimeStamp, $data, $clientIp);
+    }
 }
 
 class WxPayApiTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * @var WxPayApi
+     * @var WxPayApiMock
      */
     protected $pay = null;
 

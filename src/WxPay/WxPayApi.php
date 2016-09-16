@@ -185,7 +185,7 @@ class WxPayApi
      * @param   string  $clientIp
      * @return  string | false
      */
-    public function reportCostTime($url, $startTimeStamp, $data, $clientIp)
+    protected function reportCostTime($url, $startTimeStamp, $data, $clientIp)
     {
         //如果不需要上报数据
         if (0 == $this->config->getReportLevel()) {

@@ -38,8 +38,9 @@ abstract class PayAbstract
     /**
      * 支付
      * @param PayOrder $payOrder
+     * @param string $ip
      */
-    public function pay(PayOrder $payOrder)
+    public function pay(PayOrder $payOrder, $ip)
     {
         $url = $this->payUrl($payOrder);
         $this->getLogWriter()->info("pay url:".$url);

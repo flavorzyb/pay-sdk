@@ -19,9 +19,9 @@ class WxPayMock extends WxPay
         return parent::_payUrl($payOrder);
     }
 
-    public function _pay(PayOrder $payOrder, $tradeType)
+    public function _pay(PayOrder $payOrder, $tradeType, $ip)
     {
-        return parent::_pay($payOrder, $tradeType);
+        return parent::_pay($payOrder, $tradeType, $ip);
     }
 }
 
@@ -103,65 +103,61 @@ class WxPayTest extends \PHPUnit_Framework_TestCase
     {
         $order = $this->createPayOrder();
         $order->setIp('');
-        self::assertFalse($this->pay->pay($order));
+        self::assertFalse($this->pay->pay($order, '127.0.0.1'));
 
         $order = $this->createPayOrder();
         $order->setPayAmount(0);
-        self::assertFalse($this->pay->pay($order));
+        self::assertFalse($this->pay->pay($order, '127.0.0.1'));
     }
 
     public function testPayReturnError()
     {
         $wxPayApi =$this->createWxPayApi();
-        $wxPayApi->shouldReceive('postXmlCurl')->andReturn('<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg><appid><![CDATA[wx2421b1c4370ec43b]]></appid><mch_id><![CDATA[10000100]]></mch_id><nonce_str><![CDATA[IITRi8Iabbblz1Jc]]></nonce_str><sign><![CDATA[7921E432F65EB8ED0CE9755F0E86D72F]]></sign><result_code><![CDATA[SUCCESS]]></result_code><prepay_id><![CDATA[wx201411101639507cbf6ffd8b0779950874]]></prepay_id><trade_type><![CDATA[JSAPI]]></trade_type></xml>');
         $this->pay->setWxPayApi($wxPayApi);
-        $result = $this->pay->pay($this->createPayOrder());
+        $result = $this->pay->pay($this->createPayOrder(), '127.0.0.1');
         self::assertFalse($result);
 
-        $result = $this->pay->nativePay($this->createPayOrder());
+        $result = $this->pay->nativePay($this->createPayOrder(), '127.0.0.1');
         self::assertFalse($result);
 
-        $result = $this->pay->appPay($this->createPayOrder());
+        $result = $this->pay->appPay($this->createPayOrder(), '127.0.0.1');
         self::assertFalse($result);
     }
 
     public function testPayReturnCodeFail()
     {
         $wxPayApi =$this->createWxPayApi();
-        $wxPayApi->shouldReceive('postXmlCurl')->andReturn('<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[签名失败]]></return_msg><appid><![CDATA[wx2421b1c4370ec43b]]></appid><mch_id><![CDATA[10000100]]></mch_id><nonce_str><![CDATA[IITRi8Iabbblz1Jc]]></nonce_str><sign><![CDATA[E34C76BF2C66B91F96F189F56E2E9BC2]]></sign><result_code><![CDATA[SUCCESS]]></result_code><prepay_id><![CDATA[wx201411101639507cbf6ffd8b0779950874]]></prepay_id><trade_type><![CDATA[JSAPI]]></trade_type></xml>');
         $this->pay->setWxPayApi($wxPayApi);
-        $result = $this->pay->pay($this->createPayOrder());
+        $result = $this->pay->pay($this->createPayOrder(), '127.0.0.1');
         self::assertFalse($result);
 
-        $result = $this->pay->nativePay($this->createPayOrder());
+        $result = $this->pay->nativePay($this->createPayOrder(), '127.0.0.1');
         self::assertFalse($result);
 
-        $result = $this->pay->appPay($this->createPayOrder());
+        $result = $this->pay->appPay($this->createPayOrder(), '127.0.0.1');
         self::assertFalse($result);
     }
 
     public function testPay()
     {
         $wxPayApi =$this->createWxPayApi();
-        $wxPayApi->shouldReceive('postXmlCurl')->andReturn('<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg><appid><![CDATA[wx2421b1c4370ec43b]]></appid><mch_id><![CDATA[10000100]]></mch_id><nonce_str><![CDATA[IITRi8Iabbblz1Jc]]></nonce_str><sign><![CDATA[E34C76BF2C66B91F96F189F56E2E9BC2]]></sign><result_code><![CDATA[SUCCESS]]></result_code><prepay_id><![CDATA[wx201411101639507cbf6ffd8b0779950874]]></prepay_id><trade_type><![CDATA[JSAPI]]></trade_type></xml>');
         $this->pay->setWxPayApi($wxPayApi);
         $data = ['appid' => 'wx2421b1c4370ec43b', 'mch_id' => '10000100', 'nonce_str' => 'IITRi8Iabbblz1Jc', 'prepay_id' => 'wx201411101639507cbf6ffd8b0779950874', 'result_code' => 'SUCCESS', 'return_code' => 'SUCCESS', 'return_msg' => 'OK', 'sign' => 'E34C76BF2C66B91F96F189F56E2E9BC2', 'trade_type' => 'JSAPI'];
-        $result = $this->pay->pay($this->createPayOrder());
+        $result = $this->pay->pay($this->createPayOrder(), '127.0.0.1');
         self::assertEquals($data, $result);
 
-        $result = $this->pay->nativePay($this->createPayOrder());
+        $result = $this->pay->nativePay($this->createPayOrder(), '127.0.0.1');
         self::assertEquals($data, $result);
 
-        $result = $this->pay->appPay($this->createPayOrder());
+        $result = $this->pay->appPay($this->createPayOrder(), '127.0.0.1');
         self::assertEquals($data, $result);
     }
 
     public function testPayErrorTradeType()
     {
         $wxPayApi =$this->createWxPayApi();
-        $wxPayApi->shouldReceive('postXmlCurl')->andReturn('<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg><appid><![CDATA[wx2421b1c4370ec43b]]></appid><mch_id><![CDATA[10000100]]></mch_id><nonce_str><![CDATA[IITRi8Iabbblz1Jc]]></nonce_str><sign><![CDATA[E34C76BF2C66B91F96F189F56E2E9BC2]]></sign><result_code><![CDATA[SUCCESS]]></result_code><prepay_id><![CDATA[wx201411101639507cbf6ffd8b0779950874]]></prepay_id><trade_type><![CDATA[JSAPI]]></trade_type></xml>');
         $this->pay->setWxPayApi($wxPayApi);
-        $result = $this->pay->_pay($this->createPayOrder(), 'ErrorType');
+        $result = $this->pay->_pay($this->createPayOrder(), 'ErrorType', '127.0.0.1');
         self::assertFalse($result);
     }
 
