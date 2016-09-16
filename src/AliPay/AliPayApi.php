@@ -9,6 +9,7 @@ use Pay\AliPay\Modules\AliPayTradeQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeRefundQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeRefundRequest;
 use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
+use Pay\AliPay\Modules\AliPayTradeWapPayResult;
 use Simple\Log\Writer;
 
 class AliPayApi
@@ -118,6 +119,47 @@ class AliPayApi
 
         return substr($result, 0, -1);
     }
+
+    /**
+     * 验证数组数据的签名
+     * @param array $data
+     * @return bool
+     */
+    protected function rsaVerify(array $data) {
+        $sign = $data['sign'];
+        var_dump($this->getSignContent($data), $this->verify($this->getSignContent($data), $sign));
+        return $this->verify($this->getSignContent($data), $sign);
+    }
+
+    /**
+     * 验证签名
+     * @param string $data
+     * @param string $sign
+     * @return bool
+     * @throws AliPayException
+     */
+    protected function verify($data, $sign) {
+        if (!is_file($this->getConfig()->getPublicKeyPath())) {
+            throw new AliPayException('RSA私钥文件不存在');
+        }
+
+        //读取公钥文件
+        $pubKey = file_get_contents($this->getConfig()->getPublicKeyPath());
+
+        //转换为openssl格式密钥
+        $res = openssl_get_publickey($pubKey);
+        if (!$res) {
+            throw new AliPayException('支付宝RSA公钥错误。请检查公钥文件格式是否正确');
+        }
+
+        //调用openssl内置方法验签，返回bool值
+        $result = (1 == openssl_verify($data, base64_decode($sign), $res));
+        //释放资源
+        openssl_free_key($res);
+
+        return $result;
+    }
+
 
     /**
      * 加密方法
@@ -290,6 +332,24 @@ class AliPayApi
         //待签名字符串
         $data['sign'] = $this->generateSign($data);
         return $this->buildRequestForm($data, $request);
+    }
+
+    public function parsePayReturnResult(array $data)
+    {
+        if (!$this->rsaVerify($data)) {
+            return null;
+        }
+
+        $result = new AliPayTradeWapPayResult();
+        $result->setAppId($data['app_id']);
+        $result->setCharset(AliPayCharset::build($data['charset']));
+        $result->setTimeStamp($data['timestamp']);
+        $result->setTradeNo($data['trade_no']);
+        $result->setOutTradeNo($data['out_trade_no']);
+        $result->setTotalAmount(floatval($data['total_amount']));
+        $result->setSellerId($data['seller_id']);
+
+        return $result;
     }
 
     public function orderQuery(AliPayTradeQueryRequest $request)

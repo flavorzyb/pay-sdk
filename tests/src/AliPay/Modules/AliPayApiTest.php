@@ -81,4 +81,22 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $result = $this->pay->pay($this->createWapPayRequest());
         self::assertTrue(strlen($result) > 500);
     }
+
+    public function testParsePayReturnResult()
+    {
+        $data = [];
+        $data['total_amount'] = '9.00';
+        $data['timestamp'] = '2016-09-17 01:59:36';
+        $data['sign'] = 'Ev/0PQyqggdsjP35o5cyV1dzxnaiWPhILNKrbpW0Z6powfIn2q/UmBRsDucCG5nwl0Ovz8IYlY4n4stBeVNET5WZZImYXMqdd2LpwZErPp69ekNDNn6S1pJWTwpiewu2tW3TxF8L9GlDTzhtE+AwR+96HDFlDT1bLxp21txAnm4=';
+        $data['trade_no'] = '2016091721001004360200059780';
+        $data['sign_type'] ='RSA';
+        $data['charset'] = 'utf-8';
+        $data['seller_id'] = '2088102175865018';
+        $data['method'] = 'alipay.trade.wap.pay.return';
+        $data['app_id'] = '2016091600523436';
+        $data['out_trade_no'] = '2016091701592157dc32f9371c7';
+        $data['version'] = '1.0';
+
+        self::assertTrue($this->pay->parsePayReturnResult($data) instanceof AliPayTradeWapPayResult);
+    }
 }
