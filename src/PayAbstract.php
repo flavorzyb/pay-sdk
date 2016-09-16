@@ -29,13 +29,6 @@ abstract class PayAbstract
     }
 
     /**
-     * 生成支付的url
-     * @param PayOrder $payOrder
-     * @return string
-     */
-    abstract protected function _payUrl(PayOrder $payOrder);
-
-    /**
      * 支付
      * @param PayOrder $payOrder
      * @param string $ip

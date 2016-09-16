@@ -6,7 +6,7 @@ class AliConfigTest extends \PHPUnit_Framework_TestCase
     public function testOptionsIsMutable()
     {
         $config = new AliConfig();
-        $config->setPartnerId('20884213451476760');
+        $config->setAppId('20884213451476760');
         $config->setKey('9bb03rsrl1la3icy2eph8hpqwy7jzz0i');
         $config->setPrivateKeyPath('rsa_private_key.pem');
         $config->setPublicKeyPath('alipay_public_key.pem');

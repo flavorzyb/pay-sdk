@@ -37,17 +37,10 @@ class ConfigFactory
     public static function createAliPayConfig()
     {
         $result = new AliConfig();
-        $result->setPartnerId('20884213451476760');
-        $result->setKey('9bb03rsrl1la3icy2eph8hpqwy7jzz0i');
+        $result->setAppId('2016091600523436');
         $result->setPrivateKeyPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR .'rsa_private_key.pem');
         $result->setPublicKeyPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR . 'alipay_public_key.pem');
 
-        $result->setSignType('RSA');
-        $result->setInputCharset('utf-8');
-        $result->setCertPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR . 'cacert.pem');
-        $result->setTransport('http');
-
-        $result->setAccount('test@163.com');
         $result->setNotifyUrl('/Mall/PayResponse/wxPay');
         $result->setCallBackUrl('/Mall/PayResponse/index');
         $result->setMerchantUrl('/Mall/PayResponse/interrupt');
