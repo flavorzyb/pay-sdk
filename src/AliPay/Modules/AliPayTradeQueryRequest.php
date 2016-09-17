@@ -19,6 +19,12 @@ class AliPayTradeQueryRequest extends AliPayRequest
      */
     private $tradeNo = '';
 
+    /**
+     * 详见应用授权概述
+     * @var string
+     */
+    private $appAuthToken = '';
+
     public function getMethod()
     {
         return self::METHOD;
@@ -71,5 +77,21 @@ class AliPayTradeQueryRequest extends AliPayRequest
     public function setTradeNo($tradeNo)
     {
         $this->tradeNo = $tradeNo;
+    }
+
+    /**
+     * @return string
+     */
+    public function getAppAuthToken()
+    {
+        return $this->appAuthToken;
+    }
+
+    /**
+     * @param string $appAuthToken
+     */
+    public function setAppAuthToken($appAuthToken)
+    {
+        $this->appAuthToken = $appAuthToken;
     }
 }

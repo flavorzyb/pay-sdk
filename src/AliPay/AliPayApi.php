@@ -5,15 +5,24 @@ use Pay\AliPay\Modules\AliPayBase;
 use Pay\AliPay\Modules\AliPayCharset;
 use Pay\AliPay\Modules\AliPayRequest;
 use Pay\AliPay\Modules\AliPayTradeCloseRequest;
+use Pay\AliPay\Modules\AliPayTradeFundBill;
 use Pay\AliPay\Modules\AliPayTradeQueryRequest;
+use Pay\AliPay\Modules\AliPayTradeQueryResult;
 use Pay\AliPay\Modules\AliPayTradeRefundQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeRefundRequest;
+use Pay\AliPay\Modules\AliPayTradeStatus;
 use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
 use Pay\AliPay\Modules\AliPayTradeWapPayResult;
 use Simple\Log\Writer;
+use Simple\Http\Client;
 
 class AliPayApi
 {
+    /**
+     * 成功返回的code代码
+     */
+    const CODE_SUCCESS = '10000';
+
     /**
      * @var AliConfig
      */
@@ -33,6 +42,14 @@ class AliPayApi
     {
         $this->config = $config;
         $this->logWriter = $writer;
+    }
+
+    /**
+     * @return Client
+     */
+    protected function getClient()
+    {
+        return new Client();
     }
 
     /**
@@ -308,23 +325,22 @@ class AliPayApi
     protected function initAliPayTradeWapPayRequest(AliPayTradeWapPayRequest $request)
     {
         $config = $this->getConfig();
-        $request = $this->initAliPayBase($request);
         $request->setNotifyUrl($config->getNotifyUrl());
         $request->setReturnUrl($config->getNotifyUrl());
         $request->setSellerId($config->getSellerId());
+
+        $request = $this->initAliPayBase($request);
 
         return $request;
     }
 
     /**
-     *
+     * 支付请求
      * @param AliPayTradeWapPayRequest $request
      * @return bool|string
      */
     public function pay(AliPayTradeWapPayRequest $request)
     {
-        $request = $this->initAliPayTradeWapPayRequest($request);
-
         if (('' == $request->getSubject()) ||
             ('' == $request->getOutTradeNo()) ||
             (0.01 > $request->getTotalAmount()) ||
@@ -332,12 +348,19 @@ class AliPayApi
             return false;
         }
 
+        $request = $this->initAliPayTradeWapPayRequest($request);
+
         $data = $this->getWapPayRequestParams($request);
         //待签名字符串
         $data['sign'] = $this->generateSign($data);
         return $this->buildRequestForm($data, $request);
     }
 
+    /**
+     * 解析支付的同步返回数据
+     * @param array $data
+     * @return null|AliPayTradeWapPayResult
+     */
     public function parsePayReturnResult(array $data)
     {
         if (!$this->rsaVerify($data)) {
@@ -357,8 +380,150 @@ class AliPayApi
         return $result;
     }
 
+    /**
+     * @param AliPayTradeQueryRequest $request
+     * @return array
+     */
+    protected function getOrderQueryRequestParams(AliPayTradeQueryRequest $request)
+    {
+        $result = $this->getRequestParams($request);
+        if ('' != $request->getAppAuthToken()) {
+            $result['app_auth_token'] = $request->getAppAuthToken();
+        }
+
+        return $result;
+    }
+
+    /**
+     * build url
+     * @param array $data
+     * @return string
+     */
+    protected function buildUrl(array $data) {
+        $result = $this->getConfig()->getGateWayUrl() . '?';
+        foreach ($data as $k => $v) {
+            $v = urlencode($v);
+            $result .= "{$k}={$v}&";
+        }
+
+        return substr($result, 0 , -1);
+    }
+
+    /**
+     * create AliPayTradeFundBill array
+     * @param array $data
+     * @return array
+     */
+    protected function createFundBillArray(array $data)
+    {
+        $result = [];
+        foreach ($data as $v) {
+            $fb = new AliPayTradeFundBill();
+            $fb->setFundChannel($v['fund_channel']);
+            $fb->setAmount(floatval($v['amount']));
+            $fb->setRealAmount(floatval($v['real_amount']));
+            $result[] = $fb;
+        }
+
+        return $result;
+    }
+
+    /**
+     * 查询订单
+     * @param AliPayTradeQueryRequest $request
+     * @return AliPayTradeQueryResult|false
+     */
     public function orderQuery(AliPayTradeQueryRequest $request)
     {
+        if (('' == $request->getTradeNo()) && ('' == $request->getOutTradeNo())) {
+            return false;
+        }
+
+        $request = $this->initAliPayBase($request);
+        $data = $this->getOrderQueryRequestParams($request);
+        $data['sign'] = $this->generateSign($data);
+
+        $client = $this->getClient();
+        $client->setUrl($this->buildUrl($data));
+
+        if (!$client->exec()) {
+            $this->getLogWriter()->error("order query exec error:" . serialize($data));
+            return false;
+        }
+
+        $result = $client->getResponse();
+        $data = json_decode($result, true);
+        if (!isset($data['alipay_trade_query_response'])) {
+            $this->getLogWriter()->error("orderQuery json_decode fail: " . $result);
+            return false;
+        }
+
+        $sign = '';
+        if (isset($data['sign'])) {
+            $sign = $data['sign'];
+        }
+
+        $data = $data['alipay_trade_query_response'];
+
+        if (self::CODE_SUCCESS != $data['code']) {
+            $this->getLogWriter()->error("order query exec error:" . serialize($data));
+            return false;
+        }
+
+        if (!$this->verify(json_encode($data), $sign)) {
+            $this->getLogWriter()->error("orderQuery rsaVerify fail: " . $result);
+            return false;
+        }
+
+        $result = new AliPayTradeQueryResult();
+        $result->setCode($data['code']);
+        $result->setMsg($data['msg']);
+        $result->setBuyerLogonId($data['buyer_logon_id']);
+        $result->setBuyerUserId($data['buyer_user_id']);
+        $result->setOutTradeNo($data['out_trade_no']);
+        $result->setReceiptAmount(floatval($data['receipt_amount']));
+        $result->setSendPayDate($data['send_pay_date']);
+        $result->setTotalAmount(floatval($data['total_amount']));
+        $result->setTradeNo($data['trade_no']);
+        $result->setTradeStatus(new AliPayTradeStatus($data['trade_status']));
+
+        if (isset($data['buyer_pay_amount'])) {
+            $result->setBuyerPayAmount(floatval($data['buyer_pay_amount']));
+        }
+
+        if (isset($data['point_amount'])) {
+            $result->setPointAmount(floatval($data['point_amount']));
+        }
+
+        if (isset($data['invoice_amount'])) {
+            $result->setInvoiceAmount(floatval($data['invoice_amount']));
+        }
+
+        if (isset($data['alipay_store_id'])) {
+            $result->setAlipayStoreId($data['alipay_store_id']);
+        }
+
+        if (isset($data['store_id'])) {
+            $result->setStoreId($data['store_id']);
+        }
+
+        if (isset($data['terminal_id'])) {
+            $result->setTerminalId($data['terminal_id']);
+        }
+
+        if (isset($data['store_name'])) {
+            $result->setStoreName($data['store_name']);
+        }
+
+        if (isset($data['industry_sepc_detail'])) {
+            $result->setIndustrySepcDetail($data['industry_sepc_detail']);
+        }
+
+        if (isset($data['fund_bill_list'])) {
+            $result->setFundBillList($this->createFundBillArray($data['fund_bill_list']));
+        }
+
+        return $result;
     }
 
     public function orderClose(AliPayTradeCloseRequest $request)
