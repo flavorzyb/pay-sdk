@@ -427,22 +427,6 @@ class WxPayApiTest extends \PHPUnit_Framework_TestCase
         $result = $this->pay->transfers($order, $ip);
         self::assertFalse($result);
 
-        /**
-         * //检测必填参数
-        if (('' == $transfer->getPartnerTradeNo()) ||
-        ('' == $transfer->getOpenId()) ||
-        (0 == $transfer->getAmount()) ||
-        ('' == $transfer->getDescription()) ||
-        ('' == $transfer->getSpbillCreateIp())) {
-        return false;
-        }
-
-        //如果check_name设置为FORCE_CHECK或OPTION_CHECK，则必填用户真实姓名
-        if (($transfer->getCheckName() != WxPayCheckName::NO_CHECK) && ('' == $transfer->getReUserName())) {
-        return false;
-        }
-         *
-         */
         $order->setPartnerTradeNo('10000098201411111234567890');
         $result = $this->pay->transfers($order, $ip);
         self::assertFalse($result);
