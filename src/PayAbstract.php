@@ -23,7 +23,7 @@ abstract class PayAbstract
     /**
      * @return Writer
      */
-    public function getLogWriter()
+    protected function getLogWriter()
     {
         return $this->logWriter;
     }
@@ -32,36 +32,9 @@ abstract class PayAbstract
      * 支付
      * @param PayOrder $payOrder
      * @param string $ip
-     */
-    public function pay(PayOrder $payOrder, $ip)
-    {
-        $url = $this->payUrl($payOrder);
-        $this->getLogWriter()->info("pay url:".$url);
-        if ('' != $url) {
-            header('Location:' . $url);
-        }
-    }
-
-    /**
-     * 支付URL
-     * @param PayOrder $payOrder
-     * @return string
-     */
-    public function payUrl(PayOrder $payOrder)
-    {
-        if (!$this->check($payOrder)) {
-            return '';
-        }
-
-        return $this->_payUrl($payOrder);
-    }
-
-    /**
-     * 检查
-     * @param PayOrder $payOrder
      * @return bool
      */
-    protected function check(PayOrder $payOrder)
+    public function pay(PayOrder $payOrder, $ip)
     {
         if ('' == $payOrder->getOrderId()) {
             $this->getLogWriter()->error("订单ID不能为空");
@@ -84,5 +57,29 @@ abstract class PayAbstract
         }
 
         return true;
+    }
+
+    public function orderQuery()
+    {
+    }
+
+    public function closeOrder()
+    {
+    }
+
+    public function refund()
+    {
+    }
+
+    public function refundQuery()
+    {
+    }
+
+    public function parseNotify($string, $ip)
+    {
+    }
+
+    public function parsePayReturnResult()
+    {
     }
 }

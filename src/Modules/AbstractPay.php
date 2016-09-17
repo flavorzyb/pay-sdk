@@ -34,6 +34,12 @@ abstract class AbstractPay
      */
     private $limitPay      = null;
 
+    /**
+     * 该笔订单允许的最晚付款时间，逾期将关闭交易。
+     * @var int
+     */
+    private $timeoutExpress = 900;
+
     public function __construct()
     {
         $this->limitPay = new LimitPay(LimitPay::NORMAL);
@@ -127,5 +133,21 @@ abstract class AbstractPay
     public function setLimitPay(LimitPay $limitPay)
     {
         $this->limitPay = $limitPay;
+    }
+
+    /**
+     * @return int
+     */
+    public function getTimeoutExpress()
+    {
+        return $this->timeoutExpress;
+    }
+
+    /**
+     * @param int $timeoutExpress
+     */
+    public function setTimeoutExpress($timeoutExpress)
+    {
+        $this->timeoutExpress = intval($timeoutExpress);
     }
 }

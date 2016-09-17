@@ -10,15 +10,9 @@ use Pay\WxPay\Modules\WxPayNotifyReply;
 use Pay\WxPay\WxJsApiPay;
 use Pay\WxPay\WxNativePay;
 use Pay\WxPay\WxPayApi;
-use Simple\Log\Writer;
 
 class WxPayMock extends WxPay
 {
-    public function _payUrl(PayOrder $payOrder)
-    {
-        return parent::_payUrl($payOrder);
-    }
-
     public function _pay(PayOrder $payOrder, $tradeType, $ip)
     {
         return parent::_pay($payOrder, $tradeType, $ip);
@@ -48,14 +42,11 @@ class WxPayTest extends \PHPUnit_Framework_TestCase
         self::assertTrue($this->pay->getWxJsApiPay() instanceof WxJsApiPay);
         self::assertTrue($this->pay->getWxNativePay() instanceof WxNativePay);
         self::assertTrue($this->pay->getWxNativePay() instanceof WxNativePay);
-        self::assertTrue($this->pay->getLogWriter() instanceof Writer);
-        self::assertTrue($this->pay->getLogWriter() instanceof Writer);
         self::assertTrue($this->pay->getWxPayApi() instanceof WxPayApi);
         self::assertTrue($this->pay->getWxPayApi() instanceof WxPayApi);
         $openId = 'wxd678efh567hg6787';
         $this->pay->setOpenId($openId);
         self::assertEquals($openId, $this->pay->getOpenId());
-        self::assertEquals('', $this->pay->_payUrl($this->createPayOrder()));
     }
 
     private function createPayOrder()
@@ -79,8 +70,8 @@ class WxPayTest extends \PHPUnit_Framework_TestCase
     {
         $result = m::mock('Pay\WxPay\WxPayApi');
         $result->shouldReceive('getMillisecond')->andReturn(time());
-        $result->shouldReceive('reportCostTime')->andReturn(true);
         $result->shouldReceive('replyNotify')->andReturn('');
+        $result->shouldReceive('unifiedOrder')->andReturn();
         return $result;
     }
 

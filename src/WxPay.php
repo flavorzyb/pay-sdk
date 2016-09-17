@@ -120,26 +120,6 @@ class WxPay extends PayAbstract
     }
 
     /**
-     * 检查
-     * @param PayOrder $payOrder
-     * @return bool
-     * @override
-     */
-    protected function check(PayOrder $payOrder)
-    {
-        if (!parent::check($payOrder)) {
-            return false;
-        }
-
-        if ('' == $payOrder->getIp()) {
-            $this->getLogWriter()->error("error: ip不能为空");
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * 设置open id
      * @param string $openId
      */
@@ -165,6 +145,11 @@ class WxPay extends PayAbstract
      */
     public function pay(PayOrder $payOrder, $ip)
     {
+        $result = parent::pay($payOrder, $ip);
+        if (!$result) {
+            return false;
+        }
+
         return $this->_pay($payOrder, 'JSAPI', $ip);
     }
 
@@ -176,7 +161,8 @@ class WxPay extends PayAbstract
      */
     protected function _pay(PayOrder $payOrder, $tradeType, $ip)
     {
-        if (!$this->check($payOrder)) {
+        if ('' == $payOrder->getIp()) {
+            $this->getLogWriter()->error("error: ip不能为空");
             return false;
         }
 
@@ -249,15 +235,6 @@ class WxPay extends PayAbstract
         $result->setSpbillCreateIp($payOrder->getIp());
 
         return $result;
-    }
-    /**
-     * 微信支付 不实现此方法
-     * @param PayOrder $payOrder
-     * @return string
-     */
-    protected function _payUrl(PayOrder $payOrder)
-    {
-        return "";
     }
 
     /**

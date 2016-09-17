@@ -7,23 +7,23 @@ class PayOrder extends  AbstractPay
      * 服务器异步通知页面路径
      * @var string
      */
-    private $_notifyUrl     = '';
+    private $notifyUrl     = '';
     /**
      * 页面跳转同步通知页面路径
      * @var string
      */
-    private $_callBackUrl   = '';
+    private $callBackUrl   = '';
     /**
      * 操作中断返回地址
      * @var string
      */
-    private $_merchantUrl   = '';
+    private $merchantUrl   = '';
 
     /**
      * 支付客户端IP
      * @var string
      */
-    private $_ip            = '';
+    private $ip            = '';
 
     /**
      * 服务器异步通知页面路径
@@ -31,7 +31,7 @@ class PayOrder extends  AbstractPay
      */
     public function getNotifyUrl()
     {
-        return $this->_notifyUrl;
+        return $this->notifyUrl;
     }
 
     /**
@@ -40,7 +40,7 @@ class PayOrder extends  AbstractPay
      */
     public function setNotifyUrl($notifyUrl)
     {
-        $this->_notifyUrl = trim($notifyUrl);
+        $this->notifyUrl = trim($notifyUrl);
     }
 
     /**
@@ -49,7 +49,7 @@ class PayOrder extends  AbstractPay
      */
     public function getCallBackUrl()
     {
-        return $this->_callBackUrl;
+        return $this->callBackUrl;
     }
 
     /**
@@ -58,7 +58,7 @@ class PayOrder extends  AbstractPay
      */
     public function setCallBackUrl($callBackUrl)
     {
-        $this->_callBackUrl = trim($callBackUrl);
+        $this->callBackUrl = trim($callBackUrl);
     }
 
     /**
@@ -67,7 +67,7 @@ class PayOrder extends  AbstractPay
      */
     public function getMerchantUrl()
     {
-        return $this->_merchantUrl;
+        return $this->merchantUrl;
     }
 
     /**
@@ -76,7 +76,7 @@ class PayOrder extends  AbstractPay
      */
     public function setMerchantUrl($merchantUrl)
     {
-        $this->_merchantUrl = trim($merchantUrl);
+        $this->merchantUrl = trim($merchantUrl);
     }
 
     /**
@@ -84,7 +84,7 @@ class PayOrder extends  AbstractPay
      */
     public function getIp()
     {
-        return $this->_ip;
+        return $this->ip;
     }
 
     /**
@@ -92,6 +92,6 @@ class PayOrder extends  AbstractPay
      */
     public function setIp($ip)
     {
-        $this->_ip = trim($ip);
+        $this->ip = trim($ip);
     }
 }
