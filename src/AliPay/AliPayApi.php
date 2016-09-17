@@ -10,6 +10,7 @@ use Pay\AliPay\Modules\AliPayTradeFundBill;
 use Pay\AliPay\Modules\AliPayTradeQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeQueryResult;
 use Pay\AliPay\Modules\AliPayTradeRefundQueryRequest;
+use Pay\AliPay\Modules\AliPayTradeRefundQueryResult;
 use Pay\AliPay\Modules\AliPayTradeRefundRequest;
 use Pay\AliPay\Modules\AliPayTradeRefundResult;
 use Pay\AliPay\Modules\AliPayTradeStatus;
@@ -420,6 +421,16 @@ class AliPayApi
         return $result;
     }
 
+    protected function getOrderRefundQueryRequestParams(AliPayTradeRefundQueryRequest $request)
+    {
+        $result = $this->getRequestParams($request);
+        if ('' != $request->getAppAuthToken()) {
+            $result['app_auth_token'] = $request->getAppAuthToken();
+        }
+
+        return $result;
+    }
+
     /**
      * build url
      * @param array $data
@@ -616,6 +627,10 @@ class AliPayApi
         return $result;
     }
 
+    /**
+     * @param AliPayTradeRefundRequest $request
+     * @return AliPayTradeRefundResult|false
+     */
     public function refund(AliPayTradeRefundRequest $request)
     {
         if (('' == $request->getTradeNo()) && ('' == $request->getOutTradeNo())) {
@@ -659,7 +674,7 @@ class AliPayApi
         }
 
         if (!$this->verify(json_encode($data), $sign)) {
-            $this->getLogWriter()->error("order close rsaVerify fail: " . $result);
+            $this->getLogWriter()->error("order refund rsaVerify fail: " . $result);
             return false;
         }
 
@@ -690,7 +705,89 @@ class AliPayApi
         return $result;
     }
 
+    /**
+     * @param AliPayTradeRefundQueryRequest $request
+     * @return bool|AliPayTradeRefundQueryResult
+     */
     public function refundQuery(AliPayTradeRefundQueryRequest $request)
+    {
+        if (('' == $request->getTradeNo()) && ('' == $request->getOutTradeNo())) {
+            return false;
+        }
+
+        if ('' == $request->getOutRequestNo()) {
+            return false;
+        }
+
+        $request = $this->initAliPayBase($request);
+        $data = $this->getOrderRefundQueryRequestParams($request);
+        $data['sign'] = $this->generateSign($data);
+
+        $client = $this->getClient();
+        $client->setUrl($this->buildUrl($data));
+
+        if (!$client->exec()) {
+            $this->getLogWriter()->error("order refund query exec error:" . serialize($data));
+            return false;
+        }
+
+        $result = $client->getResponse();
+
+        $data = json_decode($result, true);
+        if (!isset($data['alipay_trade_fastpay_refund_query_response'])) {
+            $this->getLogWriter()->error("order refund query json_decode fail: " . $result);
+            return false;
+        }
+
+        $sign = '';
+        if (isset($data['sign'])) {
+            $sign = $data['sign'];
+        }
+
+        $data = $data['alipay_trade_fastpay_refund_query_response'];
+
+        if (self::CODE_SUCCESS != $data['code']) {
+            $this->getLogWriter()->error("order refund query exec error:" . serialize($data));
+            return false;
+        }
+
+        if (!$this->verify(json_encode($data), $sign)) {
+            $this->getLogWriter()->error("order refund query rsaVerify fail: " . $result);
+            return false;
+        }
+
+        $result = new AliPayTradeRefundQueryResult();
+        $result->setCode($data['code']);
+        $result->setMsg($data['msg']);
+
+        if (isset($data['trade_no'])) {
+            $result->setTradeNo($data['trade_no']);
+        }
+
+        if (isset($data['out_trade_no'])) {
+            $result->setOutTradeNo($data['out_trade_no']);
+        }
+
+        if (isset($data['out_request_no'])) {
+            $result->setOutRequestNo($data['out_request_no']);
+        }
+
+        if (isset($data['refund_reason'])) {
+            $result->setRefundReason($data['refund_reason']);
+        }
+
+        if (isset($data['total_amount'])) {
+            $result->setTotalAmount(floatval($data['total_amount']));
+        }
+
+        if (isset($data['refund_amount'])) {
+            $result->setRefundAmount(floatval($data['refund_amount']));
+        }
+
+        return $result;
+    }
+
+    public function notify()
     {
     }
 }

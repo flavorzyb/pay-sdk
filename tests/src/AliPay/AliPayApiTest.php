@@ -5,7 +5,10 @@ use Pay\AliPay\Modules\AliPayTradeCloseRequest;
 use Pay\AliPay\Modules\AliPayTradeCloseResult;
 use Pay\AliPay\Modules\AliPayTradeQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeQueryResult;
+use Pay\AliPay\Modules\AliPayTradeRefundQueryRequest;
+use Pay\AliPay\Modules\AliPayTradeRefundQueryResult;
 use Pay\AliPay\Modules\AliPayTradeRefundRequest;
+use Pay\AliPay\Modules\AliPayTradeRefundRequestTest;
 use Pay\AliPay\Modules\AliPayTradeRefundResult;
 use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
 use Pay\AliPay\Modules\AliPayTradeWapPayResult;
@@ -403,11 +406,11 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $result = new AliPayTradeRefundRequest();
         $result->setTradeNo('2016091721001004360200059782');
         $result->setOutTradeNo('2016091703060157dc4299104e3');
-        $result->setRefundAmount(0.10);
+        $result->setRefundAmount(0.20);
         $result->setRefundReason('正常退款');
         $result->setOperatorId('YX01');
-        $result->setOutRequestNo(date('YmdHis').uniqid());
-
+        $no = date('YmdHis').uniqid();
+        $result->setOutRequestNo($no);
         return $result;
     }
 
@@ -452,7 +455,9 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $client->shouldReceive('exec')->andReturn(true);
         $client->shouldReceive('getResponse')->andReturn($data);
         $this->pay->setClient($client);
-        $result = $this->pay->refund($this->createOrderRefundRequest());
+        $request = $this->createOrderRefundRequest();
+        $request->setAppAuthToken('POiPhfDxOYBfUNn1lkeT');
+        $result = $this->pay->refund($request);
         self::assertFalse($result);
     }
 
@@ -517,5 +522,124 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $this->pay->isMockRsaVerify = true;
         $result = $this->pay->refund($this->createOrderRefundRequest());
         self::assertTrue($result instanceof AliPayTradeRefundResult);
+    }
+
+    private function createOrderRefundQueryRequest()
+    {
+        $result = new AliPayTradeRefundQueryRequest();
+        $result->setTradeNo('2016091721001004360200059782');
+        $result->setOutTradeNo('2016091703060157dc4299104e3');
+        $result->setOutRequestNo('2016091714150157dcdf6550595');
+        $result->setAppAuthToken('POiPhfDxOYBfUNn1lkeT');
+        return $result;
+
+    }
+    public function testRefundQuery()
+    {
+        $data = '{"alipay_trade_fastpay_refund_query_response":{"code":"10000","msg":"Success","out_request_no":"2016091714150157dcdf6550595","out_trade_no":"2016091703060157dc4299104e3","refund_amount":"0.20","total_amount":"9.00","trade_no":"2016091721001004360200059782"},"sign":"AFn0kiUIj94lo6WuFEAT788rwzHVKffSwPzj2mZ+uFSE6ZCS04fanLNhKerinTtU6+7MmAxf3xgduWFHbTniU75xrsiOrbU6sDG5b/wNzuIw7/hSr2AzTeTtIO+nX825hTOdOaN9oy9wWFFGFX/6UGdz7G/PjefuMQ+BqfDolGI="}';
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $result = $this->pay->refundQuery($this->createOrderRefundQueryRequest());
+        self::assertTrue($result instanceof AliPayTradeRefundQueryResult);
+    }
+
+    public function testRefundQueryEmptyTradeNo()
+    {
+        $request = $this->createOrderRefundQueryRequest();
+        $request->setTradeNo('');
+        $request->setOutTradeNo('');
+        $result = $this->pay->refundQuery($request);
+        self::assertFalse($result);
+    }
+
+    public function testRefundQueryEmptyRequestNo()
+    {
+        $request = $this->createOrderRefundQueryRequest();
+        $request->setOutRequestNo('');
+        $result = $this->pay->refundQuery($request);
+        self::assertFalse($result);
+    }
+
+    public function testRefundQueryExecReturnFalse()
+    {
+        $request = $this->createOrderRefundQueryRequest();
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(false);
+        $this->pay->setClient($client);
+        $result = $this->pay->refundQuery($request);
+        self::assertFalse($result);
+    }
+
+    public function testRefundQueryReturnErrorString()
+    {
+        $request = $this->createOrderRefundQueryRequest();
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn('test');
+        $this->pay->setClient($client);
+        $result = $this->pay->refundQuery($request);
+        self::assertFalse($result);
+    }
+
+    public function testRefundQueryReturnErrorCode()
+    {
+        $data = '{
+    "alipay_trade_fastpay_refund_query_response":{
+        "code":"20000",
+        "msg":"Service Currently Unavailable",
+        "sub_code":"isp.unknow-error",
+        "sub_msg":"系统繁忙"
+    },
+    "sign":"ERITJKEIJKJHKKKKKKKHJEREEEEEEEEEEE"
+}
+';
+        $request = $this->createOrderRefundQueryRequest();
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $result = $this->pay->refundQuery($request);
+        self::assertFalse($result);
+    }
+
+    public function testRefundQueryVerifyFalse()
+    {
+        $data = '{"alipay_trade_fastpay_refund_query_response":{"code":"10000","msg":"Success","out_request_no":"2016091714150157dcdf6550595","out_trade_no":"2016091703060157dc4299104e3","refund_amount":"0.20","total_amount":"9.00","trade_no":"2016091721001004360200059782"},"sign":"AFn0kiUIj94lo6WuFEAT788rwzHVKffSwPzj2mZ+uZCS04fanLNhKerinTtU6+7MmAxf3xgduWFHbTniU75xrsiOrbU6sDG5b/wNzuIw7/hSr2AzTeTtIO+nX825hTOdOaN9oy9wWFFGFX/6UGdz7G/PjefuMQ+BqfDolGI="}';
+
+        $request = $this->createOrderRefundQueryRequest();
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $result = $this->pay->refundQuery($request);
+        self::assertFalse($result);
+    }
+
+    public function testRefundQueryMockVerifyTrue()
+    {
+        $data = '{
+    "alipay_trade_fastpay_refund_query_response":{
+        "code":"10000",
+        "msg":"Success",
+        "out_request_no":"20150320010101001",
+        "out_trade_no":"20150320010101001",
+        "refund_amount":12.33,
+        "refund_reason":"用户退款请求",
+        "total_amount":100.20,
+        "trade_no":"2014112611001004680073956707"
+    },
+    "sign":"ERITJKEIJKJHKKKKKKKHJEREEEEEEEEEEE"
+}';
+
+        $request = $this->createOrderRefundQueryRequest();
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $this->pay->isMockRsaVerify =true;
+        $result = $this->pay->refundQuery($request);
+        self::assertTrue($result instanceof AliPayTradeRefundQueryResult);
     }
 }
