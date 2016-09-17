@@ -1,6 +1,8 @@
 <?php
 namespace Pay\AliPay;
 
+use Pay\AliPay\Modules\AliPayTradeCloseRequest;
+use Pay\AliPay\Modules\AliPayTradeCloseResult;
 use Pay\AliPay\Modules\AliPayTradeQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeQueryResult;
 use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
@@ -292,5 +294,105 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $order->setAppAuthToken('POiPhfDxOYBfUNn1lkeT');
         $result = $this->pay->orderQuery($order);
         self::assertTrue($result instanceof AliPayTradeQueryResult);
+    }
+
+    private function createOrderCloseRequest()
+    {
+        $result = new AliPayTradeCloseRequest();
+        $result->setNotifyUrl('http://www.zhuyanbin.com/CallBack/notify_url.jsp');
+
+        $result->setOutTradeNo('2016091703060157dc4299104e3');
+        $result->setOperatorId('YX01');
+        $result->setAppAuthToken('POiPhfDxOYBfUNn1lkeT');
+
+        return $result;
+    }
+    public function testOrderClose()
+    {
+        $data ='{
+    "alipay_trade_close_response":{
+        "code":"10000",
+        "msg":"Success",
+        "out_trade_no":"YX_001",
+        "trade_no":"2013112111001004500000675971"
+    },
+    "sign":"uYs6IErMvNG7nowLUesFjv+xD2EzYnFEAtSQ1ndYOFsG61IKWmlndZnW01OWsNNawJE6eMW/DA9w+7+injrXw7s8Fh1ROcDUT2hxOnCYz8X3+4dPzVZT5q2SCauF0PR36C7b/be3R1vn/N5YkSasH89EtKoL85u2jrTTyqdE="
+}';
+
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $this->pay->isMockRsaVerify = true;
+        $result = $this->pay->orderClose($this->createOrderCloseRequest());
+        self::assertTrue($result instanceof AliPayTradeCloseResult);
+    }
+
+    public function testOrderCloseTradeNoIsEmpty()
+    {
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(false);
+        $this->pay->setClient($client);
+        $this->pay->isMockRsaVerify = true;
+        $result = $this->pay->orderClose(new AliPayTradeCloseRequest());
+        self::assertFalse($result);
+    }
+
+    public function testOrderCloseExecReturnFalse()
+    {
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(false);
+        $this->pay->setClient($client);
+        $this->pay->isMockRsaVerify = true;
+        $result = $this->pay->orderClose($this->createOrderCloseRequest());
+        self::assertFalse($result);
+    }
+
+    public function testOrderCloseErrorReturnString()
+    {
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn('test');
+        $this->pay->setClient($client);
+        $this->pay->isMockRsaVerify = true;
+        $result = $this->pay->orderClose($this->createOrderCloseRequest());
+        self::assertFalse($result);
+    }
+
+    public function testOrderCloseErrorCode()
+    {
+        $data = '{
+    "alipay_trade_close_response":{
+        "code":"20000",
+        "msg":"Service Currently Unavailable",
+        "sub_code":"isp.unknow-error",
+        "sub_msg":"系统繁忙"
+    }
+}';
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $result = $this->pay->orderClose($this->createOrderCloseRequest());
+        self::assertFalse($result);
+    }
+
+    public function testOrderCloseVerifyFalse()
+    {
+        $data ='{
+    "alipay_trade_close_response":{
+        "code":"10000",
+        "msg":"Success",
+        "out_trade_no":"YX_001",
+        "trade_no":"2013112111001004500000675971"
+    },
+    "sign":"uYs6IErMvNG7nowLUesFjv+xD2EzYnFEAtSQ1ndYOFsG61IKWmlndZnW01OWsNNawJE6eMW/DA9w+7+injrXw7s8Fh1ROcDUT2hxOnCYz8X3+4dPzVZT5q2SCauF0PR36C7b/be3R1vn/N5YkSasH89EtKoL85u2jrTTyqdE="
+}';
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $result = $this->pay->orderClose($this->createOrderCloseRequest());
+        self::assertFalse($result);
     }
 }

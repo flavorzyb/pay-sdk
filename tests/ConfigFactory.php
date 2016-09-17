@@ -41,9 +41,9 @@ class ConfigFactory
         $result->setPrivateKeyPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR .'app_private_key.pem');
         $result->setPublicKeyPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR . 'alipay_public_key.pem');
 
-        $result->setNotifyUrl('http://192.168.0.105/test/notify.php');
-        $result->setCallBackUrl('http://192.168.0.105/test/notify.php');
-        $result->setMerchantUrl('http://192.168.0.105/test/notify.php');
+        $result->setNotifyUrl('http://upgrade.zhuyanbin.cn/notify.php');
+        $result->setCallBackUrl('http://upgrade.zhuyanbin.cn/notify.php');
+        $result->setMerchantUrl('http://upgrade.zhuyanbin.cn/notify.php');
         $result->setSellerId('2088102175865018');
         $result->setGateWayUrl('https://openapi.alipaydev.com/gateway.do');
 

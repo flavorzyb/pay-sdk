@@ -5,6 +5,7 @@ use Pay\AliPay\Modules\AliPayBase;
 use Pay\AliPay\Modules\AliPayCharset;
 use Pay\AliPay\Modules\AliPayRequest;
 use Pay\AliPay\Modules\AliPayTradeCloseRequest;
+use Pay\AliPay\Modules\AliPayTradeCloseResult;
 use Pay\AliPay\Modules\AliPayTradeFundBill;
 use Pay\AliPay\Modules\AliPayTradeQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeQueryResult;
@@ -394,6 +395,20 @@ class AliPayApi
         return $result;
     }
 
+    protected function getOrderCloseRequestParams(AliPayTradeCloseRequest $request)
+    {
+        $result = $this->getRequestParams($request);
+        if ('' != $request->getAppAuthToken()) {
+            $result['app_auth_token'] = $request->getAppAuthToken();
+        }
+
+        if ('' != $request->getNotifyUrl()) {
+            $result['notify_url'] = $request->getNotifyUrl();
+        }
+
+        return $result;
+    }
+
     /**
      * build url
      * @param array $data
@@ -452,9 +467,10 @@ class AliPayApi
         }
 
         $result = $client->getResponse();
+
         $data = json_decode($result, true);
         if (!isset($data['alipay_trade_query_response'])) {
-            $this->getLogWriter()->error("orderQuery json_decode fail: " . $result);
+            $this->getLogWriter()->error("order query json_decode fail: " . $result);
             return false;
         }
 
@@ -471,7 +487,7 @@ class AliPayApi
         }
 
         if (!$this->verify(json_encode($data), $sign)) {
-            $this->getLogWriter()->error("orderQuery rsaVerify fail: " . $result);
+            $this->getLogWriter()->error("order query rsaVerify fail: " . $result);
             return false;
         }
 
@@ -526,8 +542,67 @@ class AliPayApi
         return $result;
     }
 
+    /**
+     * 关闭交易
+     * @param AliPayTradeCloseRequest $request
+     * @return bool|AliPayTradeCloseResult
+     */
     public function orderClose(AliPayTradeCloseRequest $request)
     {
+        if (('' == $request->getTradeNo()) && ('' == $request->getOutTradeNo())) {
+            return false;
+        }
+
+        $request = $this->initAliPayBase($request);
+        $data = $this->getOrderCloseRequestParams($request);
+        $data['sign'] = $this->generateSign($data);
+
+        $client = $this->getClient();
+        $client->setUrl($this->buildUrl($data));
+
+        if (!$client->exec()) {
+            $this->getLogWriter()->error("order close exec error:" . serialize($data));
+            return false;
+        }
+
+        $result = $client->getResponse();
+
+        $data = json_decode($result, true);
+        if (!isset($data['alipay_trade_close_response'])) {
+            $this->getLogWriter()->error("order close json_decode fail: " . $result);
+            return false;
+        }
+
+        $sign = '';
+        if (isset($data['sign'])) {
+            $sign = $data['sign'];
+        }
+
+        $data = $data['alipay_trade_close_response'];
+
+        if (self::CODE_SUCCESS != $data['code']) {
+            $this->getLogWriter()->error("order close exec error:" . serialize($data));
+            return false;
+        }
+
+        if (!$this->verify(json_encode($data), $sign)) {
+            $this->getLogWriter()->error("order close rsaVerify fail: " . $result);
+            return false;
+        }
+
+        $result = new AliPayTradeCloseResult();
+        $result->setCode($data['code']);
+        $result->setMsg($data['msg']);
+
+        if (isset($data['trade_no'])) {
+            $result->setTradeNo($data['trade_no']);
+        }
+
+        if (isset($data['out_trade_no'])) {
+            $result->setOutTradeNo($data['out_trade_no']);
+        }
+
+        return $result;
     }
 
     public function refund(AliPayTradeRefundRequest $request)
