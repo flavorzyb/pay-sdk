@@ -15,8 +15,6 @@ use Simple\Log\Writer;
 
 class WxPay extends PayAbstract
 {
-    // 2小时失效
-    const EXPIRE_TIME = 7200;
     /**
      * 微信支付配置文件
      * @var WxPayConfig
@@ -216,11 +214,16 @@ class WxPay extends PayAbstract
         $notifyUrl  = trim($notifyUrl);
         $result     = new WxPayUnifiedOrder();
         $body = $payOrder->getGoodsName();
-        if (mb_strlen($body) > 30) {
+        if ((strlen($body) > 120) && (mb_strlen($body) > 30)) {
             $body = mb_substr($body, 0, 30) . '...';
         }
+
         $result->setBody($body);
-        $result->setAttach($payOrder->getExtra());
+
+        if ('' != $payOrder->getExtra()) {
+            $result->setAttach($payOrder->getExtra());
+        }
+
         $result->setOutTradeNo($payOrder->getOrderId());
 
         if ($payOrder->getLimitPay()->isNoCredit()) {
@@ -229,8 +232,11 @@ class WxPay extends PayAbstract
 
         $result->setTotalFee(($payOrder->getPayAmount() * 100));
 
-        $result->setTimeStart(date("YmdHis"));
-        $result->setTimeExpire(date("YmdHis", time() + self::EXPIRE_TIME));
+        if ($payOrder->getTimeoutExpress() > 300) {
+            $result->setTimeStart(date("YmdHis"));
+            $result->setTimeExpire(date("YmdHis", time() + $payOrder->getTimeoutExpress()));
+        }
+
         $result->setNotifyUrl($notifyUrl);
         $result->setSpbillCreateIp($payOrder->getIp());
 

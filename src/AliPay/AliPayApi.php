@@ -19,6 +19,7 @@ use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
 use Pay\AliPay\Modules\AliPayTradeWapPayResult;
 use Simple\Log\Writer;
 use Simple\Http\Client;
+use Pay\AliPay\Modules\AliPayConfig;
 
 class AliPayApi
 {
@@ -28,7 +29,7 @@ class AliPayApi
     const CODE_SUCCESS = '10000';
 
     /**
-     * @var AliConfig
+     * @var AliPayConfig
      */
     private $config = null;
 
@@ -39,10 +40,10 @@ class AliPayApi
 
     /**
      * AliPayApi constructor.
-     * @param AliConfig $config
+     * @param AliPayConfig $config
      * @param Writer $writer
      */
-    public function __construct(AliConfig $config, Writer $writer)
+    public function __construct(AliPayConfig $config, Writer $writer)
     {
         $this->config = $config;
         $this->logWriter = $writer;
@@ -65,7 +66,7 @@ class AliPayApi
     }
 
     /**
-     * @return AliConfig
+     * @return AliPayConfig
      */
     protected function getConfig()
     {

@@ -1,11 +1,11 @@
 <?php
-namespace Pay\AliPay;
+namespace Pay\AliPay\Modules;
 
 class AliConfigTest extends \PHPUnit_Framework_TestCase
 {
     public function testOptionsIsMutable()
     {
-        $config = new AliConfig();
+        $config = new AliPayConfig();
         $config->setAppId('20884213451476760');
         $config->setPrivateKeyPath('rsa_private_key.pem');
         $config->setPublicKeyPath('alipay_public_key.pem');

@@ -1,7 +1,7 @@
 <?php
-namespace Pay\AliPay;
+namespace Pay\AliPay\Modules;
 
-class AliConfig
+class AliPayConfig
 {
     //↓↓↓↓↓↓↓↓↓↓请在这里配置您的基本信息↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
     //AppId

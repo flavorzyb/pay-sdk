@@ -83,7 +83,7 @@ abstract class AbstractPay
 
     /**
      * 支付款
-     * @return int
+     * @return float
      */
     public function getPayAmount()
     {

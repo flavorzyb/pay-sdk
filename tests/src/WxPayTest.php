@@ -19,7 +19,7 @@ class WxPayMock extends WxPay
     }
 }
 
-class WxPayTest extends \PHPUnit_Framework_TestCase
+class WxPayTest extends PayAbstractTest
 {
     /**
      * @var WxPayMock
@@ -35,6 +35,12 @@ class WxPayTest extends \PHPUnit_Framework_TestCase
         $writer->shouldReceive('debug')->andReturn(true);
         $this->pay = new WxPayMock(ConfigFactory::createWxConfig(), $writer);
     }
+
+    protected function getPay()
+    {
+        return $this->pay;
+    }
+
 
     public function testOptions()
     {
@@ -71,7 +77,6 @@ class WxPayTest extends \PHPUnit_Framework_TestCase
         $result = m::mock('Pay\WxPay\WxPayApi');
         $result->shouldReceive('getMillisecond')->andReturn(time());
         $result->shouldReceive('replyNotify')->andReturn('');
-        $result->shouldReceive('unifiedOrder')->andReturn();
         return $result;
     }
 
@@ -104,6 +109,7 @@ class WxPayTest extends \PHPUnit_Framework_TestCase
     public function testPayReturnError()
     {
         $wxPayApi =$this->createWxPayApi();
+        $wxPayApi->shouldReceive('unifiedOrder')->andReturn(false);
         $this->pay->setWxPayApi($wxPayApi);
         $result = $this->pay->pay($this->createPayOrder(), '127.0.0.1');
         self::assertFalse($result);
@@ -118,6 +124,8 @@ class WxPayTest extends \PHPUnit_Framework_TestCase
     public function testPayReturnCodeFail()
     {
         $wxPayApi =$this->createWxPayApi();
+        $data = ['result_code' => 'FAIL', 'return_code' => 'FAIL', 'return_msg' => 'OK'];
+        $wxPayApi->shouldReceive('unifiedOrder')->andReturn($data);
         $this->pay->setWxPayApi($wxPayApi);
         $result = $this->pay->pay($this->createPayOrder(), '127.0.0.1');
         self::assertFalse($result);
@@ -132,8 +140,10 @@ class WxPayTest extends \PHPUnit_Framework_TestCase
     public function testPay()
     {
         $wxPayApi =$this->createWxPayApi();
-        $this->pay->setWxPayApi($wxPayApi);
         $data = ['appid' => 'wx2421b1c4370ec43b', 'mch_id' => '10000100', 'nonce_str' => 'IITRi8Iabbblz1Jc', 'prepay_id' => 'wx201411101639507cbf6ffd8b0779950874', 'result_code' => 'SUCCESS', 'return_code' => 'SUCCESS', 'return_msg' => 'OK', 'sign' => 'E34C76BF2C66B91F96F189F56E2E9BC2', 'trade_type' => 'JSAPI'];
+        $wxPayApi->shouldReceive('unifiedOrder')->andReturn($data);
+
+        $this->pay->setWxPayApi($wxPayApi);
         $result = $this->pay->pay($this->createPayOrder(), '127.0.0.1');
         self::assertEquals($data, $result);
 

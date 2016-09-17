@@ -32,7 +32,7 @@ abstract class PayAbstract
      * 支付
      * @param PayOrder $payOrder
      * @param string $ip
-     * @return bool
+     * @return bool|string
      */
     public function pay(PayOrder $payOrder, $ip)
     {
@@ -48,11 +48,6 @@ abstract class PayAbstract
 
         if (0.01 > $payOrder->getPayAmount()) {
             $this->getLogWriter()->error("支付款不能为0");
-            return false;
-        }
-
-        if (false !== stripos($payOrder->getExtra(), '|')) {
-            $this->getLogWriter()->error("扩展字段不能包含|字符");
             return false;
         }
 

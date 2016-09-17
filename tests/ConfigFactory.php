@@ -1,6 +1,6 @@
 <?php
 use Pay\WxPay\Modules\WxPayConfig;
-use Pay\AliPay\AliConfig;
+use Pay\AliPay\Modules\AliPayConfig;
 class ConfigFactory
 {
     private static $CONFIG_PATH = __DIR__ . DIRECTORY_SEPARATOR . 'configs';
@@ -32,11 +32,11 @@ class ConfigFactory
     }
 
     /**
-     * @return AliConfig
+     * @return AliPayConfig
      */
     public static function createAliPayConfig()
     {
-        $result = new AliConfig();
+        $result = new AliPayConfig();
         $result->setAppId('2016091600523436');
         $result->setPrivateKeyPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR .'app_private_key.pem');
         $result->setPublicKeyPath(self::$CONFIG_PATH . DIRECTORY_SEPARATOR .'alipay' . DIRECTORY_SEPARATOR . 'alipay_public_key.pem');
