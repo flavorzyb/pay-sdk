@@ -1,6 +1,7 @@
 <?php
 namespace Pay\AliPay;
 
+use Pay\AliPay\Modules\AliPayNotify;
 use Pay\AliPay\Modules\AliPayTradeCloseRequest;
 use Pay\AliPay\Modules\AliPayTradeCloseResult;
 use Pay\AliPay\Modules\AliPayTradeQueryRequest;
@@ -8,7 +9,6 @@ use Pay\AliPay\Modules\AliPayTradeQueryResult;
 use Pay\AliPay\Modules\AliPayTradeRefundQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeRefundQueryResult;
 use Pay\AliPay\Modules\AliPayTradeRefundRequest;
-use Pay\AliPay\Modules\AliPayTradeRefundRequestTest;
 use Pay\AliPay\Modules\AliPayTradeRefundResult;
 use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
 use Pay\AliPay\Modules\AliPayTradeWapPayResult;
@@ -49,6 +49,14 @@ class AliPayApiMock extends AliPayApi
             return true;
         }
         return parent::verify($data, $sign);
+    }
+
+    protected function rsaVerify(array $data)
+    {
+        if ($this->isMockRsaVerify) {
+            return true;
+        }
+        return parent::rsaVerify($data);
     }
 }
 class AliPayApiTest extends \PHPUnit_Framework_TestCase
@@ -132,7 +140,6 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
     public function testPay()
     {
         $result = $this->pay->pay($this->createWapPayRequest());
-        file_put_contents('/Users/flavor/wwwroot/test/alipay.php', $result);
         self::assertTrue(strlen($result) > 500);
     }
 
@@ -145,13 +152,22 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         self::assertTrue($this->pay->parsePayReturnResult($data) instanceof AliPayTradeWapPayResult);
     }
 
+    public function testParsePayReturnResultErrorAppId()
+    {
+        $uri = 'total_amount=9.00&timestamp=2016-09-17+03%3A06%3A17&sign=SU2ZqczH5R2cbWp3Ipa3xJJMqAlpiBRZKx1pwQwubV3g5k3qCSdpVoMVhbW7lWYMuNWl3kgxJjBdVt5dmmUgx52SHjT9TA4oeM5dZ6wG6gB%2F3PE9GBH0BLEKxuAG4VvZprsksHrgzq4Yo1aoYPffdkpEEJn7O69CKUpmZ8ePl90%3D&trade_no=2016091721001004360200059782&sign_type=RSA&charset=utf-8&seller_id=2088102175865018&method=alipay.trade.wap.pay.return&app_id=20160910523436&out_trade_no=2016091703060157dc4299104e3&version=1.0';
+        $data = [];
+        parse_str($uri, $data);
+        $this->pay->isMockRsaVerify = true;
+        self::assertFalse($this->pay->parsePayReturnResult($data));
+    }
+
     public function testParsePayReturnVerifyFalse()
     {
         $uri = 'total_amount=9.00&timestamp=2016-09-17+03%3A06%3A17&sign=SU2ZqczH5R2cbWp3Ipa3xJJMqAlpiBRZKx1pwQwubV3g5k3qCSdpVoMVhbW7lWYMuNWl3kgxJjBdVt5dmmUgx52SHjT9TA4oeM5dZ6wG6gB%2F3PE9GBH0BLEKxuAG4VvZprsksHrgzq4Yo1aoYPffdkpEEJn7O69CKUpmZ8ePl90%3D&trade_no=2016091721001004360200059782&sign_type=RSA&charset=utf-8&seller_id=2088102175865018&method=alipay.trade.wap.pay.return&app_id=2016091600523436&out_trade_no=2016091703060157dc4299104e3&version=1.0';
         $data = [];
         parse_str($uri, $data);
         unset($data['total_amount']);
-        self::assertNull($this->pay->parsePayReturnResult($data));
+        self::assertFalse($this->pay->parsePayReturnResult($data));
     }
 
     /**
@@ -166,7 +182,7 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $data = [];
         parse_str($uri, $data);
         unset($data['total_amount']);
-        self::assertNull($this->pay->parsePayReturnResult($data));
+        self::assertFalse($this->pay->parsePayReturnResult($data));
     }
 
     /**
@@ -181,7 +197,7 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $data = [];
         parse_str($uri, $data);
         unset($data['total_amount']);
-        self::assertNull($this->pay->parsePayReturnResult($data));
+        self::assertFalse($this->pay->parsePayReturnResult($data));
     }
 
     private function createOrderQueryRequest()
@@ -641,5 +657,51 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $this->pay->isMockRsaVerify =true;
         $result = $this->pay->refundQuery($request);
         self::assertTrue($result instanceof AliPayTradeRefundQueryResult);
+    }
+
+    public function testParseNotify()
+    {
+        $str = 'a:16:{s:9:"notify_id";s:34:"05389b31a838d4698d2f59b9f808f19is2";s:11:"gmt_payment";s:19:"2016-09-17 12:50:51";s:11:"notify_type";s:17:"trade_status_sync";s:4:"sign";s:172:"SFED+VWKFPewcuAe7BOjywgLRAmh9JWHJAiDOLrtRqTZs0CrlUCg3ahKby73Rfy1nlqNuhtno/GoBianQQtYTx8pDasoj5MHhhAIuK+Z4UitRJC3uzgdELfQgh/xOdl0RGhEgNtXWCTRZzgcpeWQ7J0cdaIQJ+MYR3nhlqlSn/Y=";s:8:"trade_no";s:28:"2016091721001004360200059786";s:8:"buyer_id";s:16:"2088102169132360";s:4:"body";s:106:"对一笔交易的具体描述信息。如果是多种商品，请将商品描述字符串累加传给body";s:6:"app_id";s:16:"2016091600523436";s:10:"gmt_create";s:19:"2016-09-17 12:50:50";s:12:"out_trade_no";s:27:"2016091712452457dcca649f405";s:9:"seller_id";s:16:"2088102175865018";s:11:"notify_time";s:19:"2016-09-17 12:50:51";s:7:"subject";s:9:"大乐透";s:12:"trade_status";s:13:"TRADE_SUCCESS";s:12:"total_amount";s:4:"9.00";s:9:"sign_type";s:3:"RSA";}';
+        $result = $this->pay->parseNotify(unserialize($str));
+        self::assertTrue($result instanceof AliPayNotify);
+    }
+
+    public function testParseNotifyVerifyFalse()
+    {
+        $str = 'a:16:{s:9:"notify_id";s:34:"05389b31a838d4698d2f59b9f808f19is2";s:11:"gmt_payment";s:19:"2016-09-17 12:50:51";s:11:"notify_type";s:17:"trade_status_sync";s:4:"sign";s:172:"SFED+VWKFPewcuAe7BOjywgLRAmh9JWHJAiDOLrtRqTZs0CrlUCg3ahKby73Rfy1nlqNuhtno/GoBianQQtYTx8pDasoj5MHhhAIuK+Z4UitRJC3uzgdELfQgh/xOdl0RGhEgNtXWCTRZzgcpeWQ7J0cdaIQJ+MYR3nhlqlSn/Y=";s:8:"trade_no";s:28:"2016091721001004360200059786";s:8:"buyer_id";s:16:"2088102169132360";s:4:"body";s:106:"对一笔交易的具体描述信息。如果是多种商品，请将商品描述字符串累加传给body";s:6:"app_id";s:16:"2016091600523436";s:10:"gmt_create";s:19:"2016-09-17 12:50:50";s:12:"out_trade_no";s:27:"2016091712452457dcca649f405";s:9:"seller_id";s:16:"2088102175865018";s:11:"notify_time";s:19:"2016-09-17 12:50:51";s:7:"subject";s:9:"大乐透";s:12:"trade_status";s:13:"TRADE_SUCCESS";s:12:"total_amount";s:4:"9.00";s:9:"sign_type";s:3:"RSA";}';
+        $data = unserialize($str);
+        $data['notify_id'] = '05389b31a838d4698d2f';
+        $result = $this->pay->parseNotify($data);
+        self::assertFalse($result);
+    }
+
+    public function testParseNotifyErrorAppId()
+    {
+        $str = 'a:16:{s:9:"notify_id";s:34:"05389b31a838d4698d2f59b9f808f19is2";s:11:"gmt_payment";s:19:"2016-09-17 12:50:51";s:11:"notify_type";s:17:"trade_status_sync";s:4:"sign";s:172:"SFED+VWKFPewcuAe7BOjywgLRAmh9JWHJAiDOLrtRqTZs0CrlUCg3ahKby73Rfy1nlqNuhtno/GoBianQQtYTx8pDasoj5MHhhAIuK+Z4UitRJC3uzgdELfQgh/xOdl0RGhEgNtXWCTRZzgcpeWQ7J0cdaIQJ+MYR3nhlqlSn/Y=";s:8:"trade_no";s:28:"2016091721001004360200059786";s:8:"buyer_id";s:16:"2088102169132360";s:4:"body";s:106:"对一笔交易的具体描述信息。如果是多种商品，请将商品描述字符串累加传给body";s:6:"app_id";s:16:"2016091600523436";s:10:"gmt_create";s:19:"2016-09-17 12:50:50";s:12:"out_trade_no";s:27:"2016091712452457dcca649f405";s:9:"seller_id";s:16:"2088102175865018";s:11:"notify_time";s:19:"2016-09-17 12:50:51";s:7:"subject";s:9:"大乐透";s:12:"trade_status";s:13:"TRADE_SUCCESS";s:12:"total_amount";s:4:"9.00";s:9:"sign_type";s:3:"RSA";}';
+        $data = unserialize($str);
+        $data['app_id'] = '20160916005236';
+        $this->pay->isMockRsaVerify = true;
+        $result = $this->pay->parseNotify($data);
+        self::assertFalse($result);
+    }
+
+    public function testParseNotifyFullSettings()
+    {
+        $str = 'a:16:{s:9:"notify_id";s:34:"05389b31a838d4698d2f59b9f808f19is2";s:11:"gmt_payment";s:19:"2016-09-17 12:50:51";s:11:"notify_type";s:17:"trade_status_sync";s:4:"sign";s:172:"SFED+VWKFPewcuAe7BOjywgLRAmh9JWHJAiDOLrtRqTZs0CrlUCg3ahKby73Rfy1nlqNuhtno/GoBianQQtYTx8pDasoj5MHhhAIuK+Z4UitRJC3uzgdELfQgh/xOdl0RGhEgNtXWCTRZzgcpeWQ7J0cdaIQJ+MYR3nhlqlSn/Y=";s:8:"trade_no";s:28:"2016091721001004360200059786";s:8:"buyer_id";s:16:"2088102169132360";s:4:"body";s:106:"对一笔交易的具体描述信息。如果是多种商品，请将商品描述字符串累加传给body";s:6:"app_id";s:16:"2016091600523436";s:10:"gmt_create";s:19:"2016-09-17 12:50:50";s:12:"out_trade_no";s:27:"2016091712452457dcca649f405";s:9:"seller_id";s:16:"2088102175865018";s:11:"notify_time";s:19:"2016-09-17 12:50:51";s:7:"subject";s:9:"大乐透";s:12:"trade_status";s:13:"TRADE_SUCCESS";s:12:"total_amount";s:4:"9.00";s:9:"sign_type";s:3:"RSA";}';
+        $this->pay->isMockRsaVerify = true;
+        $data = unserialize($str);
+        $data['out_biz_no'] = 'HZRF001';
+        $data['buyer_logon_id'] = '15901825620';
+        $data['seller_email'] = 'zhuzhanghu@alitest.com';
+        $data['receipt_amount'] = 10.22;
+        $data['invoice_amount'] = 20.22;
+        $data['buyer_pay_amount'] = 2.22;
+        $data['point_amount'] = 12.22;
+        $data['refund_fee'] = 11.22;
+        $data['gmt_refund'] = '2015-04-28 15:45:57.320';
+        $data['gmt_close'] = '2015-04-28 15:45:57';
+        $data['fund_bill_list'] = [["amount"=>"15.00","fundChannel"=>"ALIPAYACCOUNT"]];
+        $result = $this->pay->parseNotify($data);
+        self::assertTrue($result instanceof AliPayNotify);
     }
 }

@@ -3,6 +3,7 @@ namespace Pay\AliPay;
 
 use Pay\AliPay\Modules\AliPayBase;
 use Pay\AliPay\Modules\AliPayCharset;
+use Pay\AliPay\Modules\AliPayNotify;
 use Pay\AliPay\Modules\AliPayRequest;
 use Pay\AliPay\Modules\AliPayTradeCloseRequest;
 use Pay\AliPay\Modules\AliPayTradeCloseResult;
@@ -183,69 +184,6 @@ class AliPayApi
 
         return $result;
     }
-//
-//
-//    /**
-//     * 加密方法
-//     * @param string $str
-//     * @return string
-//     */
-//    protected function encrypt($str,$screct_key){
-//        //AES, 128 模式加密数据 CBC
-//        $screct_key = base64_decode($screct_key);
-//        $str = trim($str);
-//        $str = $this->addPKCS7Padding($str);
-//        mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128,MCRYPT_MODE_CBC),1);
-//        $encrypt_str =  mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $screct_key, $str, MCRYPT_MODE_CBC);
-//        return base64_encode($encrypt_str);
-//    }
-//
-//    /**
-//     * 解密方法
-//     * @param string $str
-//     * @return string
-//     */
-//    protected function decrypt($str,$screct_key){
-//        //AES, 128 模式加密数据 CBC
-//        $str = base64_decode($str);
-//        $screct_key = base64_decode($screct_key);
-//        mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128,MCRYPT_MODE_CBC),1);
-//        $encrypt_str =  mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $screct_key, $str, MCRYPT_MODE_CBC);
-//        $encrypt_str = trim($encrypt_str);
-//
-//        $encrypt_str = $this->stripPKSC7Padding($encrypt_str);
-//        return $encrypt_str;
-//    }
-//
-//    /**
-//     * 填充算法
-//     * @param string $source
-//     * @return string
-//     */
-//    protected function addPKCS7Padding($source){
-//        $source = trim($source);
-//        $block = mcrypt_get_block_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
-//
-//        $pad = $block - (strlen($source) % $block);
-//        if ($pad <= $block) {
-//            $char = chr($pad);
-//            $source .= str_repeat($char, $pad);
-//        }
-//        return $source;
-//    }
-//    /**
-//     * 移去填充算法
-//     * @param string $source
-//     * @return string
-//     */
-//    protected function stripPKSC7Padding($source){
-//        $source = trim($source);
-//        $char = substr($source, -1);
-//        $num = ord($char);
-//        if($num==62)return $source;
-//        $source = substr($source,0,-$num);
-//        return $source;
-//    }
 
     protected function getBaseParams(AliPayBase $request)
     {
@@ -362,13 +300,17 @@ class AliPayApi
     /**
      * 解析支付的同步返回数据
      * @param array $data
-     * @return null|AliPayTradeWapPayResult
+     * @return false|AliPayTradeWapPayResult
      */
     public function parsePayReturnResult(array $data)
     {
         if (!$this->rsaVerify($data)) {
             $this->getLogWriter()->error("parsePayReturnResult rsaVerify fail: " . serialize($data));
-            return null;
+            return false;
+        }
+
+        if ($this->getConfig()->getAppId() != $data['app_id']) {
+            return false;
         }
 
         $result = new AliPayTradeWapPayResult();
@@ -456,10 +398,25 @@ class AliPayApi
         $result = [];
         foreach ($data as $v) {
             $fb = new AliPayTradeFundBill();
-            $fb->setFundChannel($v['fund_channel']);
-            $fb->setAmount(floatval($v['amount']));
-            $fb->setRealAmount(floatval($v['real_amount']));
-            $result[] = $fb;
+            if (isset($v['fundChannel'])) {
+                $fb->setFundChannel($v['fundChannel']);
+            }
+
+            if (isset($v['fund_channel'])) {
+                $fb->setFundChannel($v['fund_channel']);
+            }
+
+            if (isset($v['amount'])) {
+                $fb->setAmount(floatval($v['amount']));
+            }
+
+            if (isset($v['real_amount'])) {
+                $fb->setRealAmount(floatval($v['real_amount']));
+            }
+
+            if ('' != $fb->getFundChannel()) {
+                $result[] = $fb;
+            }
         }
 
         return $result;
@@ -787,7 +744,109 @@ class AliPayApi
         return $result;
     }
 
-    public function notify()
+    /**
+     * 解析支付通知
+     * @param array $data
+     * @return AliPayNotify | false
+     */
+    public function parseNotify(array $data)
     {
+        if (!$this->rsaVerify($data)) {
+            $this->getLogWriter()->error("parseNotify rsaVerify fail: " . serialize($data));
+            return false;
+        }
+
+        if ($this->getConfig()->getAppId() != $data['app_id']) {
+            return false;
+        }
+
+        $result = new AliPayNotify();
+        $result->setNotifyTime($data['notify_time']);
+        $result->setNotifyType($data['notify_type']);
+        $result->setNotifyId($data['notify_id']);
+        $result->setSignType($data['sign_type']);
+        $result->setSign($data['sign']);
+
+        $result->setTradeNo($data['trade_no']);
+        $result->setAppId($data['app_id']);
+        $result->setOutTradeNo($data['out_trade_no']);
+
+        if (isset($data['out_biz_no'])) {
+            $result->setOutBizNo($data['out_biz_no']);
+        }
+
+        if (isset($data['buyer_id'])) {
+            $result->setBuyerId($data['buyer_id']);
+        }
+
+        if (isset($data['buyer_logon_id'])) {
+            $result->setBuyerLogonId($data['buyer_logon_id']);
+        }
+
+        if (isset($data['seller_id'])) {
+            $result->setSellerId($data['seller_id']);
+        }
+
+        if (isset($data['seller_email'])) {
+            $result->setSellerEmail($data['seller_email']);
+        }
+
+        if (isset($data['trade_status'])) {
+            $result->setTradeStatus(new AliPayTradeStatus($data['trade_status']));
+        }
+
+        if (isset($data['total_amount'])) {
+            $result->setTotalAmount(floatval($data['total_amount']));
+        }
+
+        if (isset($data['receipt_amount'])) {
+            $result->setReceiptAmount(floatval($data['receipt_amount']));
+        }
+
+        if (isset($data['invoice_amount'])) {
+            $result->setInvoiceAmount(floatval($data['invoice_amount']));
+        }
+
+        if (isset($data['buyer_pay_amount'])) {
+            $result->setBuyerPayAmount(floatval($data['buyer_pay_amount']));
+        }
+
+        if (isset($data['point_amount'])) {
+            $result->setPointAmount(floatval($data['point_amount']));
+        }
+
+        if (isset($data['refund_fee'])) {
+            $result->setRefundFee(floatval($data['refund_fee']));
+        }
+
+        if (isset($data['subject'])) {
+            $result->setSubject($data['subject']);
+        }
+
+        if (isset($data['body'])) {
+            $result->setBody($data['body']);
+        }
+
+        if (isset($data['gmt_create'])) {
+            $result->setGmtCreate($data['gmt_create']);
+        }
+
+        if (isset($data['gmt_payment'])) {
+            $result->setGmtPayment($data['gmt_payment']);
+        }
+
+        if (isset($data['gmt_refund'])) {
+            $result->setGmtRefund(substr($data['gmt_refund'],0, 19));
+        }
+
+        if (isset($data['gmt_close'])) {
+            $result->setGmtClose($data['gmt_close']);
+        }
+
+        if (isset($data['fund_bill_list'])) {
+            $result->setFundBillList($this->createFundBillArray($data['fund_bill_list']));
+        }
+
+        return $result;
     }
 }
