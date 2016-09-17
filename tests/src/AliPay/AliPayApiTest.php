@@ -5,6 +5,8 @@ use Pay\AliPay\Modules\AliPayTradeCloseRequest;
 use Pay\AliPay\Modules\AliPayTradeCloseResult;
 use Pay\AliPay\Modules\AliPayTradeQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeQueryResult;
+use Pay\AliPay\Modules\AliPayTradeRefundRequest;
+use Pay\AliPay\Modules\AliPayTradeRefundResult;
 use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
 use Pay\AliPay\Modules\AliPayTradeWapPayResult;
 use ConfigFactory;
@@ -394,5 +396,126 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $this->pay->setClient($client);
         $result = $this->pay->orderClose($this->createOrderCloseRequest());
         self::assertFalse($result);
+    }
+
+    private function createOrderRefundRequest()
+    {
+        $result = new AliPayTradeRefundRequest();
+        $result->setTradeNo('2016091721001004360200059782');
+        $result->setOutTradeNo('2016091703060157dc4299104e3');
+        $result->setRefundAmount(0.10);
+        $result->setRefundReason('正常退款');
+        $result->setOperatorId('YX01');
+        $result->setOutRequestNo(date('YmdHis').uniqid());
+
+        return $result;
+    }
+
+    public function testOrderRefund()
+    {
+        $data = '{"alipay_trade_refund_response":{"code":"10000","msg":"Success","buyer_logon_id":"kxk***@sandbox.com","buyer_user_id":"2088102169132360","fund_change":"Y","gmt_refund_pay":"2016-09-17 13:41:16","open_id":"20880016753930000893495010410136","out_trade_no":"2016091703060157dc4299104e3","refund_fee":"0.10","send_back_fee":"0.00","trade_no":"2016091721001004360200059782"},"sign":"Dm8bgz00F+wEs9jN5NDdlEnjDrxtKW6wImO+hUw2cXKDNIeeT0fqxuDbqQbwTKhcTuIWodTcsp2YSVdpsdwjpv49MAVi0zhbCdoGlmhgYyxs4C9R0/1MenAiB6ydwdI9sQmCLORnMmR6YCY7YqMlabb1q0rV1BBi5oVyyQjuHP4="}';
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $result = $this->pay->refund($this->createOrderRefundRequest());
+        self::assertTrue($result instanceof AliPayTradeRefundResult);
+    }
+
+    public function testOrderRefundTradeNoIsEmpty()
+    {
+        $result = $this->pay->refund(new AliPayTradeRefundRequest());
+        self::assertFalse($result);
+    }
+
+    public function testOrderRefundAmountIsZero()
+    {
+        $request = $this->createOrderRefundRequest();
+        $request->setRefundAmount(0);
+        $result = $this->pay->refund($request);
+        self::assertFalse($result);
+    }
+
+    public function testOrderRefundExeReturnFalse()
+    {
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(false);
+        $this->pay->setClient($client);
+        $result = $this->pay->refund($this->createOrderRefundRequest());
+        self::assertFalse($result);
+    }
+
+    public function testOrderRefundReturnErrorString()
+    {
+        $data = 'test';
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $result = $this->pay->refund($this->createOrderRefundRequest());
+        self::assertFalse($result);
+    }
+
+    public function testOrderRefundReturnErrorCode()
+    {
+        $data = '{
+    "alipay_trade_refund_response":{
+        "code":"20000",
+        "msg":"Service Currently Unavailable",
+        "sub_code":"isp.unknow-error",
+        "sub_msg":"系统繁忙"
+    },
+    "sign":"ERITJKEIJKJHKKKKKKKHJEREEEEEEEEEEE"
+}';
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $result = $this->pay->refund($this->createOrderRefundRequest());
+        self::assertFalse($result);
+    }
+
+    public function testOrderRefundVerifyFalse()
+    {
+        $data = '{"alipay_trade_refund_response":{"code":"10000","msg":"Success","buyer_logon_id":"kxk***@sandbox.com","buyer_user_id":"2088102169132360","fund_change":"Y","gmt_refund_pay":"2016-09-17 13:41:16","open_id":"20880016753930000893495010410136","out_trade_no":"2016091703060157dc4299104e3","refund_fee":"0.10","send_back_fee":"0.00","trade_no":"2016091721001004360200059782"},"sign":"Dm8bgz00F+wEs9jN5NDdlEnjDrxtKW6wImO+hUw2cXKDNIeeT0fqxuDbqQbwTKhcTuIWodTcsp2YSVdpsdwjpv49MAVi0zhbCdoGlmhgY4C9R0/1MenAiB6ydwdI9sQmCLORnMmR6YCY7YqMlabb1q0rV1BBi5oVyyQjuHP4="}';
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $result = $this->pay->refund($this->createOrderRefundRequest());
+        self::assertFalse($result);
+    }
+
+    public function testOrderRefundWithMockVerify()
+    {
+        $data = '{
+    "alipay_trade_refund_response":{
+        "buyer_logon_id":"159****5620",
+        "buyer_user_id":"2088101117955611",
+        "code":"10000",
+        "fund_change":"Y",
+        "gmt_refund_pay":"2014-11-27 15:45:57",
+        "msg":"Success",
+        "open_id":"2088102122524333",
+        "out_trade_no":"6823789339978248",
+        "refund_detail_item_list":[{
+            "amount":10,
+            "fund_channel":"ALIPAYACCOUNT",
+            "real_amount":11.21
+        }],
+        "refund_fee":88.88,
+        "send_back_fee":"1.8",
+        "store_name":"望湘园联洋店",
+        "trade_no":"支付宝交易号"
+    },
+    "sign":"ERITJKEIJKJHKKKKKKKHJEREEEEEEEEEEE"
+}';
+        $client = $this->createClient();
+        $client->shouldReceive('exec')->andReturn(true);
+        $client->shouldReceive('getResponse')->andReturn($data);
+        $this->pay->setClient($client);
+        $this->pay->isMockRsaVerify = true;
+        $result = $this->pay->refund($this->createOrderRefundRequest());
+        self::assertTrue($result instanceof AliPayTradeRefundResult);
     }
 }

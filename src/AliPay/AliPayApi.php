@@ -11,6 +11,7 @@ use Pay\AliPay\Modules\AliPayTradeQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeQueryResult;
 use Pay\AliPay\Modules\AliPayTradeRefundQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeRefundRequest;
+use Pay\AliPay\Modules\AliPayTradeRefundResult;
 use Pay\AliPay\Modules\AliPayTradeStatus;
 use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
 use Pay\AliPay\Modules\AliPayTradeWapPayResult;
@@ -409,6 +410,16 @@ class AliPayApi
         return $result;
     }
 
+    protected function getOrderRefundRequestParams(AliPayTradeRefundRequest $request)
+    {
+        $result = $this->getRequestParams($request);
+        if ('' != $request->getAppAuthToken()) {
+            $result['app_auth_token'] = $request->getAppAuthToken();
+        }
+
+        return $result;
+    }
+
     /**
      * build url
      * @param array $data
@@ -607,6 +618,76 @@ class AliPayApi
 
     public function refund(AliPayTradeRefundRequest $request)
     {
+        if (('' == $request->getTradeNo()) && ('' == $request->getOutTradeNo())) {
+            return false;
+        }
+
+        if ($request->getRefundAmount() < 0.01) {
+            return false;
+        }
+
+        $request = $this->initAliPayBase($request);
+        $data = $this->getOrderRefundRequestParams($request);
+        $data['sign'] = $this->generateSign($data);
+
+        $client = $this->getClient();
+        $client->setUrl($this->buildUrl($data));
+
+        if (!$client->exec()) {
+            $this->getLogWriter()->error("order refund exec error:" . serialize($data));
+            return false;
+        }
+
+        $result = $client->getResponse();
+
+        $data = json_decode($result, true);
+        if (!isset($data['alipay_trade_refund_response'])) {
+            $this->getLogWriter()->error("order refund json_decode fail: " . $result);
+            return false;
+        }
+
+        $sign = '';
+        if (isset($data['sign'])) {
+            $sign = $data['sign'];
+        }
+
+        $data = $data['alipay_trade_refund_response'];
+
+        if (self::CODE_SUCCESS != $data['code']) {
+            $this->getLogWriter()->error("order refund exec error:" . serialize($data));
+            return false;
+        }
+
+        if (!$this->verify(json_encode($data), $sign)) {
+            $this->getLogWriter()->error("order close rsaVerify fail: " . $result);
+            return false;
+        }
+
+        $result = new AliPayTradeRefundResult();
+        $result->setCode($data['code']);
+        $result->setMsg($data['msg']);
+
+        $result->setOutTradeNo($data['out_trade_no']);
+        $result->setTradeNo($data['trade_no']);
+        $result->setBuyerLogonId($data['buyer_logon_id']);
+        $result->setFundChange($data['fund_change']);
+        $result->setRefundFee(floatval($data['refund_fee']));
+        $result->setGmtRefundPay($data['gmt_refund_pay']);
+        $result->setBuyerUserId($data['buyer_user_id']);
+
+        if (isset($data['refund_detail_item_list'])) {
+            $result->setRefundDetailItemList($this->createFundBillArray($data['refund_detail_item_list']));
+        }
+
+        if (isset($data['store_name'])) {
+            $result->setStoreName($data['store_name']);
+        }
+
+        if (isset($data['send_back_fee'])) {
+            $result->setSendBackFee(floatval($data['send_back_fee']));
+        }
+
+        return $result;
     }
 
     public function refundQuery(AliPayTradeRefundQueryRequest $request)
