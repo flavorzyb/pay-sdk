@@ -466,4 +466,21 @@ class WxPay extends PayAbstract
 
         return true;
     }
+
+    /**
+     * 支付结果异步通知 回复成功
+     * @param PayNotify $notify
+     */
+    public function notifyReplySuccess(PayNotify $notify)
+    {
+
+    }
+
+    /**
+     * 支付结果异步通知 回复失败
+     * @param PayNotify $notify
+     */
+    public function notifyReplyFail(PayNotify $notify)
+    {
+    }
 }

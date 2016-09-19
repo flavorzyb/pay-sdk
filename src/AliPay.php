@@ -1,7 +1,6 @@
 <?php
 namespace Pay;
 
-use MongoDB\Driver\Query;
 use Pay\AliPay\AliPayApi;
 use Pay\AliPay\Modules\AliPayConfig;
 use Pay\AliPay\Modules\AliPayTradeCloseRequest;
