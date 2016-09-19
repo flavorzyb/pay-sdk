@@ -11,6 +11,7 @@ use Pay\WxPay\WxJsApiPay;
 use Pay\WxPay\WxNativePay;
 use Pay\WxPay\WxPayApi;
 use Pay\Modules\PayOrderQueryResult;
+use Pay\WxPay\WxPayException;
 
 class WxPayMock extends WxPay
 {
@@ -283,5 +284,13 @@ class WxPayTest extends PayAbstractTest
         $result = ob_get_contents();
         ob_end_clean();
         self::assertEquals("<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[校验订单失败]]></return_msg></xml>", $result);
+    }
+
+    /**
+     * @expectedException \Pay\WxPay\WxPayException
+     */
+    public function testParsePayReturnResult()
+    {
+        $this->pay->parsePayReturnResult("", "");
     }
 }

@@ -95,9 +95,13 @@ abstract class PayAbstract
      */
     abstract public function parseNotify($string, $ip);
 
-    public function parsePayReturnResult()
-    {
-    }
+    /**
+     * 解析支付同步返回通知
+     * @param string $string json string
+     * @param string $ip
+     */
+    abstract public function parsePayReturnResult($string, $ip);
+
 
     /**
      * 支付结果异步通知 回复成功

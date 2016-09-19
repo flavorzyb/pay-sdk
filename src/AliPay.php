@@ -179,6 +179,11 @@ class AliPay extends PayAbstract
     public function parseNotify($string, $ip)
     {
         $data = json_decode($string, true);
+        if (!is_array($data)) {
+            $this->getLogWriter()->error("AliPay parseNotify error string:{$string}");
+            return false;
+        }
+
         $result = $this->getAliPayApi()->parseNotify($data);
         if (false === $result) {
             return false;
@@ -194,11 +199,58 @@ class AliPay extends PayAbstract
         return $notify;
     }
 
+    /**
+     * 解析支付同步返回通知
+     * @param string $string json string
+     * @param string $ip
+     * @return false | PayNotify
+     */
+    public function parsePayReturnResult($string, $ip)
+    {
+        $data = json_decode($string, true);
+        if (!is_array($data)) {
+            $this->getLogWriter()->error("AliPay parseNotify error string:{$string}");
+            return false;
+        }
+
+        $query = $this->getAliPayApi()->parsePayReturnResult($data);
+        if (false === $query) {
+            return false;
+        }
+
+        $orderQuery = new PayOrderQuery();
+        $orderQuery->setTradeNo($query->getTradeNo());
+        $orderQuery->setOrderId($query->getOutTradeNo());
+
+        $orderResult = $this->orderQuery($orderQuery, $ip);
+
+        if (false === $orderResult) {
+            return false;
+        }
+
+        $result = new PayNotify();
+        $result->setOrderId($orderResult->getOrderId());
+        $result->setTradeNo($orderResult->getTradeNo());
+        $result->setTotalAmount($orderResult->getTotalAmount());
+        $result->setReceiptAmount($orderResult->getReceiptAmount());
+        $result->setTradeStatus($orderResult->getTradeStatus());
+
+        return $result;
+    }
+
+    /**
+     * 输出成功通知返回
+     * @param PayNotify $notify
+     */
     public function notifyReplySuccess(PayNotify $notify)
     {
         echo "success";
     }
 
+    /**
+     * 输出失败通知返回
+     * @param PayNotify $notify
+     */
     public function notifyReplyFail(PayNotify $notify)
     {
         echo "fail";

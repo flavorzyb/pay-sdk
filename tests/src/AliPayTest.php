@@ -8,10 +8,10 @@ use Pay\AliPay\Modules\AliPayNotify;
 use Pay\AliPay\Modules\AliPayTradeCloseResult;
 use Pay\AliPay\Modules\AliPayTradeQueryResult;
 use Pay\AliPay\Modules\AliPayTradeStatus;
+use Pay\AliPay\Modules\AliPayTradeWapPayResult;
 use Pay\Modules\PayNotify;
 use Pay\Modules\PayOrder;
 use Pay\Modules\LimitPay;
-use Pay\Modules\PayOrderQuery;
 use Pay\Modules\PayOrderQueryResult;
 
 class AliPayTest extends PayAbstractTest
@@ -156,6 +156,12 @@ class AliPayTest extends PayAbstractTest
         $api = $this->createAliPayApi();
         $api->shouldReceive('parseNotify')->andReturn(false);
         $this->pay->setAliPayApi($api);
+        $result = $this->pay->parseNotify('', '127.0.0.1');
+        self::assertFalse($result);
+
+        $api = $this->createAliPayApi();
+        $api->shouldReceive('parseNotify')->andReturn(false);
+        $this->pay->setAliPayApi($api);
         $result = $this->pay->parseNotify(json_encode(['test']), '127.0.0.1');
         self::assertFalse($result);
 
@@ -179,5 +185,34 @@ class AliPayTest extends PayAbstractTest
         $result = ob_get_contents();
         ob_end_clean();
         self::assertEquals("fail", $result);
+    }
+
+    public function testParsePayReturnResult()
+    {
+        self::assertFalse($this->pay->parsePayReturnResult('', ''));
+
+        $api = $this->createAliPayApi();
+        $api->shouldReceive('parsePayReturnResult')->andReturn(false);
+        $this->pay->setAliPayApi($api);
+        self::assertFalse($this->pay->parsePayReturnResult(json_encode(['test']), '127.0.0.1'));
+
+        $payResult = new AliPayTradeWapPayResult();
+        $payResult->setTradeNo('2013112011001004330000121536');
+        $payResult->setOutTradeNo('6823789339978248');
+
+        $api = $this->createAliPayApi();
+        $api->shouldReceive('parsePayReturnResult')->andReturn($payResult);
+        $api->shouldReceive('orderQuery')->andReturn(false);
+        $this->pay->setAliPayApi($api);
+        $result = $this->pay->parsePayReturnResult(json_encode(['test']), '127.0.0.1');
+        self::assertFalse($result);
+
+
+        $api = $this->createAliPayApi();
+        $api->shouldReceive('parsePayReturnResult')->andReturn($payResult);
+        $api->shouldReceive('orderQuery')->andReturn($this->createAliPayOrderQueryResult());
+        $this->pay->setAliPayApi($api);
+        $result = $this->pay->parsePayReturnResult(json_encode(['test']), '127.0.0.1');
+        self::assertTrue($result instanceof PayNotify);
     }
 }

@@ -12,6 +12,7 @@ use Pay\WxPay\Modules\WxPayUnifiedOrder;
 use Pay\WxPay\WxJsApiPay;
 use Pay\WxPay\WxNativePay;
 use Pay\WxPay\WxPayApi;
+use Pay\WxPay\WxPayException;
 use Simple\Log\Writer;
 use Pay\Modules\PayOrderQuery;
 use Pay\Modules\PayOrderQueryResult;
@@ -436,6 +437,18 @@ class WxPay extends PayAbstract
         }
 
         return true;
+    }
+
+    /**
+     * 解析支付同步返回通知
+     * @param string $string json string
+     * @param string $ip
+     * @return false | PayNotify
+     * @throws WxPayException
+     */
+    public function parsePayReturnResult($string, $ip)
+    {
+        throw new WxPayException("微信支付无此方法");
     }
 
     /**
