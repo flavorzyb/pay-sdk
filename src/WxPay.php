@@ -8,7 +8,6 @@ use Pay\WxPay\Modules\WxPayCloseOrder;
 use Pay\WxPay\Modules\WxPayConfig;
 use Pay\WxPay\Modules\WxPayNotifyReply;
 use Pay\WxPay\Modules\WxPayOrderQuery;
-use Pay\WxPay\Modules\WxPayTradeState;
 use Pay\WxPay\Modules\WxPayUnifiedOrder;
 use Pay\WxPay\WxJsApiPay;
 use Pay\WxPay\WxNativePay;
@@ -273,25 +272,22 @@ class WxPay extends PayAbstract
             return false;
         }
 
+        $query = new PayOrderQuery();
+        $query->setOrderId($data['out_trade_no']);
+        $query->setTradeNo($data['transaction_id']);
         // 检查订单
-        $orderQuery = $this->queryOrder($data['transaction_id'], $ip);
-        if ((null == $orderQuery) || (!$orderQuery->isSuccess())) {
-            $this->getLogWriter()->error("WxPay parseNotify Error: 校验订单失败 " . $data['transaction_id'] . ' ' . $xmlString);
-            $result = new WxPayNotifyReply();
-            $result->setReturnCode("FAIL");
-            $result->setReturnMsg("校验订单失败");
-            $this->replyNotify($result, false);
+        $orderQuery = $this->orderQuery($query, $ip);
+
+        if (false === $orderQuery) {
             return false;
         }
 
         $result = new PayNotify();
         $result->setOrderId($data['out_trade_no']);
-        if (isset($data['attach'])) {
-            $result->setExtra($data['attach']);
-        }
-        $result->setPayAmount(floatval($data['total_fee']) / 100.0);
-        $result->setStatus($data['result_code']);
-        $result->setTradeNo($data['transaction_id']);
+        $result->setTradeNo($orderQuery->getTradeNo());
+        $result->setTotalAmount($orderQuery->getTotalAmount());
+        $result->setReceiptAmount($orderQuery->getReceiptAmount());
+        $result->setTradeStatus($orderQuery->getTradeStatus());
 
         return $result;
     }
@@ -325,31 +321,6 @@ class WxPay extends PayAbstract
         $wxPayApi   = $this->getWxPayApi();
 
         $wxPayApi->replyNotify($notifyReply->toXml());
-    }
-
-    /**
-     * 查询订单
-     * @param int $transactionId
-     * @param string $ip
-     * @return WxPayTradeState | null
-     */
-    public function queryOrder($transactionId, $ip)
-    {
-        $input      = new WxPayOrderQuery();
-        $input->setTransactionId($transactionId);
-        $wxPayApi   = $this->getWxPayApi();
-        $result     = $wxPayApi->orderQuery($input, $ip);
-
-        //trade_state
-        if (isset($result['return_code']) &&
-            isset($result['result_code']) &&
-            isset($result['trade_state']) &&
-            ("SUCCESS" == $result['return_code']) &&
-            ("SUCCESS" == $result['result_code'])) {
-            return new WxPayTradeState($result['trade_state']);
-        }
-
-        return null;
     }
 
     /**
@@ -473,7 +444,10 @@ class WxPay extends PayAbstract
      */
     public function notifyReplySuccess(PayNotify $notify)
     {
-
+        $result = new WxPayNotifyReply();
+        $result->setReturnCode("SUCCESS");
+        $result->setReturnMsg("OK");
+        $this->replyNotify($result, false);
     }
 
     /**
@@ -482,5 +456,9 @@ class WxPay extends PayAbstract
      */
     public function notifyReplyFail(PayNotify $notify)
     {
+        $result = new WxPayNotifyReply();
+        $result->setReturnCode("FAIL");
+        $result->setReturnMsg("校验订单失败");
+        $this->replyNotify($result, false);
     }
 }

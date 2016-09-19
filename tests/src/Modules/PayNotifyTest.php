@@ -2,7 +2,7 @@
 namespace Pay\Modules;
 
 
-class PayNotifyTest extends AbstractPayTest
+class PayNotifyTest extends PayOrderQueryResultTest
 {
     /**
      * @var PayNotify
@@ -25,12 +25,6 @@ class PayNotifyTest extends AbstractPayTest
 
     public function testOptionsIsMutable()
     {
-        parent::testOptionsIsMutable();
-        $no = date('YmdHis'). mt_rand();
-        $this->getModel()->setTradeNo($no);
-        $this->getModel()->setStatus('success');
-
-        self::assertEquals($no, $this->getModel()->getTradeNo());
-        self::assertEquals('success', $this->getModel()->getStatus());
+        parent::testOptionIsMutable();
     }
 }

@@ -213,7 +213,10 @@ class WxPayTest extends PayAbstractTest
         ///////////////校验订单成功//////////////////////////////
         $wxPayApi =$this->createWxPayApi();
         $wxPayApi->shouldReceive('notify')->andReturn($data);
-        $wxPayApi->shouldReceive('orderQuery')->andReturn(['return_code'=>'SUCCESS', 'result_code'=>'SUCCESS', 'trade_state'=>'SUCCESS']);
+        $data = ['return_code'=>'SUCCESS', 'result_code'=>'SUCCESS', 'trade_state'=>'SUCCESS', 'transaction_id'=>'1004400740201409030005092168', 'out_trade_no'=>'1409811653'];
+        $data['total_fee'] = 12;
+        $data['cash_fee'] = 12;
+        $wxPayApi->shouldReceive('orderQuery')->andReturn($data);
         $this->pay->setWxPayApi($wxPayApi);
         self::assertTrue($this->pay->parseNotify($str, '127.0.0.1') instanceof PayNotify);
     }
@@ -265,5 +268,20 @@ class WxPayTest extends PayAbstractTest
         $this->pay->setWxPayApi($api);
         $result = $this->pay->closeOrder($this->createCloseQuery(), '127.0.0.1');
         self::assertFalse($result);
+    }
+
+    public function testNotifyReply()
+    {
+        ob_start();
+        $this->pay->notifyReplySuccess(new PayNotify());
+        $result = ob_get_contents();
+        ob_end_clean();
+        self::assertEquals("<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>", $result);
+
+        ob_start();
+        $this->pay->notifyReplyFail(new PayNotify());
+        $result = ob_get_contents();
+        ob_end_clean();
+        self::assertEquals("<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[校验订单失败]]></return_msg></xml>", $result);
     }
 }
