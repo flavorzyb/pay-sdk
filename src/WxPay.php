@@ -4,6 +4,7 @@ namespace Pay;
 use Pay\Modules\PayNotify;
 use Pay\Modules\PayOrder;
 use Pay\Modules\PayTradeStatus;
+use Pay\WxPay\Modules\WxPayCloseOrder;
 use Pay\WxPay\Modules\WxPayConfig;
 use Pay\WxPay\Modules\WxPayNotifyReply;
 use Pay\WxPay\Modules\WxPayOrderQuery;
@@ -15,6 +16,7 @@ use Pay\WxPay\WxPayApi;
 use Simple\Log\Writer;
 use Pay\Modules\PayOrderQuery;
 use Pay\Modules\PayOrderQueryResult;
+use Pay\Modules\PayOrderClose;
 
 class WxPay extends PayAbstract
 {
@@ -427,7 +429,7 @@ class WxPay extends PayAbstract
         $data->setTransactionId($query->getTradeNo());
 
         $query = $this->getWxPayApi()->orderQuery($data, $ip);
-        if (!$query) {
+        if (false === $query) {
             return false;
         }
 
@@ -439,5 +441,29 @@ class WxPay extends PayAbstract
         $result->setTradeStatus($this->buildPayStatus($query['trade_state']));
 
         return $result;
+    }
+
+    /**
+     * 关闭订单
+     * @param PayOrderClose $query
+     * @param string $ip
+     * @return bool
+     */
+    public function closeOrder(PayOrderClose $query, $ip)
+    {
+        if ('' == $query->getOrderId()) {
+            return false;
+        }
+
+        $data = new WxPayCloseOrder();
+        $data->setOutTradeNo($query->getOrderId());
+
+        $query = $this->getWxPayApi()->closeOrder($data, $ip);
+
+        if (false === $query) {
+            return false;
+        }
+
+        return true;
     }
 }

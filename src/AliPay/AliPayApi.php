@@ -527,7 +527,7 @@ class AliPayApi
      * @param AliPayTradeCloseRequest $request
      * @return bool|AliPayTradeCloseResult
      */
-    public function orderClose(AliPayTradeCloseRequest $request)
+    public function closeOrder(AliPayTradeCloseRequest $request)
     {
         if (('' == $request->getTradeNo()) && ('' == $request->getOutTradeNo())) {
             return false;

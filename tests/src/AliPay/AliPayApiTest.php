@@ -345,7 +345,7 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $client->shouldReceive('getResponse')->andReturn($data);
         $this->pay->setClient($client);
         $this->pay->isMockRsaVerify = true;
-        $result = $this->pay->orderClose($this->createOrderCloseRequest());
+        $result = $this->pay->closeOrder($this->createOrderCloseRequest());
         self::assertTrue($result instanceof AliPayTradeCloseResult);
     }
 
@@ -355,7 +355,7 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $client->shouldReceive('exec')->andReturn(false);
         $this->pay->setClient($client);
         $this->pay->isMockRsaVerify = true;
-        $result = $this->pay->orderClose(new AliPayTradeCloseRequest());
+        $result = $this->pay->closeOrder(new AliPayTradeCloseRequest());
         self::assertFalse($result);
     }
 
@@ -365,7 +365,7 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $client->shouldReceive('exec')->andReturn(false);
         $this->pay->setClient($client);
         $this->pay->isMockRsaVerify = true;
-        $result = $this->pay->orderClose($this->createOrderCloseRequest());
+        $result = $this->pay->closeOrder($this->createOrderCloseRequest());
         self::assertFalse($result);
     }
 
@@ -376,7 +376,7 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $client->shouldReceive('getResponse')->andReturn('test');
         $this->pay->setClient($client);
         $this->pay->isMockRsaVerify = true;
-        $result = $this->pay->orderClose($this->createOrderCloseRequest());
+        $result = $this->pay->closeOrder($this->createOrderCloseRequest());
         self::assertFalse($result);
     }
 
@@ -394,7 +394,7 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $client->shouldReceive('exec')->andReturn(true);
         $client->shouldReceive('getResponse')->andReturn($data);
         $this->pay->setClient($client);
-        $result = $this->pay->orderClose($this->createOrderCloseRequest());
+        $result = $this->pay->closeOrder($this->createOrderCloseRequest());
         self::assertFalse($result);
     }
 
@@ -413,7 +413,7 @@ class AliPayApiTest extends \PHPUnit_Framework_TestCase
         $client->shouldReceive('exec')->andReturn(true);
         $client->shouldReceive('getResponse')->andReturn($data);
         $this->pay->setClient($client);
-        $result = $this->pay->orderClose($this->createOrderCloseRequest());
+        $result = $this->pay->closeOrder($this->createOrderCloseRequest());
         self::assertFalse($result);
     }
 

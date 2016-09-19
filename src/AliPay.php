@@ -1,8 +1,10 @@
 <?php
 namespace Pay;
 
+use MongoDB\Driver\Query;
 use Pay\AliPay\AliPayApi;
 use Pay\AliPay\Modules\AliPayConfig;
+use Pay\AliPay\Modules\AliPayTradeCloseRequest;
 use Pay\AliPay\Modules\AliPayTradeQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeStatus;
 use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
@@ -11,6 +13,7 @@ use Pay\Modules\PayTradeStatus;
 use Simple\Log\Writer;
 use Pay\Modules\PayOrder;
 use Pay\Modules\PayOrderQuery;
+use Pay\Modules\PayOrderClose;
 
 class AliPay extends PayAbstract
 {
@@ -127,7 +130,7 @@ class AliPay extends PayAbstract
 
         $query = $this->getAliPayApi()->orderQuery($data);
 
-        if (false == $query) {
+        if (false === $query) {
             return false;
         }
 
@@ -139,5 +142,30 @@ class AliPay extends PayAbstract
         $result->setTradeStatus($this->buildTradeStatus($query->getTradeStatus()));
 
         return $result;
+    }
+
+    /**
+     * 关闭订单
+     * @param PayOrderClose $query
+     * @param string $ip
+     * @return bool
+     */
+    public function closeOrder(PayOrderClose $query, $ip)
+    {
+        if (!parent::closeOrder($query, $ip)) {
+            return false;
+        }
+
+        $data = new AliPayTradeCloseRequest();
+        $data->setTradeNo($query->getTradeNo());
+        $data->setOutTradeNo($query->getOrderId());
+
+        $query = $this->getAliPayApi()->closeOrder($data);
+
+        if (false === $query) {
+            return false;
+        }
+
+        return true;
     }
 }

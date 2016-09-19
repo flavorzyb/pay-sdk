@@ -2,6 +2,7 @@
 namespace Pay;
 
 use Pay\Modules\PayOrder;
+use Pay\Modules\PayOrderClose;
 use Pay\Modules\PayOrderQuery;
 use Simple\Log\Writer;
 
@@ -69,8 +70,19 @@ abstract class PayAbstract
         return true;
     }
 
-    public function closeOrder()
+    /**
+     * 关闭订单
+     * @param PayOrderClose $query
+     * @param string $ip
+     * @return bool
+     */
+    public function closeOrder(PayOrderClose $query, $ip)
     {
+        if (('' == $query->getTradeNo()) && ('' == $query->getOrderId())) {
+            return false;
+        }
+
+        return true;
     }
 
     public function refund()

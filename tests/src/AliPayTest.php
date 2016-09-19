@@ -4,6 +4,7 @@ namespace Pay;
 use ConfigFactory;
 use Mockery as m;
 use Pay\AliPay\AliPayApi;
+use Pay\AliPay\Modules\AliPayTradeCloseResult;
 use Pay\AliPay\Modules\AliPayTradeQueryResult;
 use Pay\AliPay\Modules\AliPayTradeStatus;
 use Pay\Modules\PayOrder;
@@ -131,5 +132,20 @@ class AliPayTest extends PayAbstractTest
         $this->pay->setAliPayApi($api);
         $result = $this->pay->orderQuery($this->createOrderQuery(), '127.0.0.1');
         self::assertFalse($result);
+    }
+
+    public function testOrderCloseReturn()
+    {
+        $api = $this->createAliPayApi();
+        $api->shouldReceive('closeOrder')->andReturn(false);
+        $this->pay->setAliPayApi($api);
+        $result = $this->pay->closeOrder($this->createCloseQuery(), '127.0.0.1');
+        self::assertFalse($result);
+
+        $api = $this->createAliPayApi();
+        $api->shouldReceive('closeOrder')->andReturn(new AliPayTradeCloseResult());
+        $this->pay->setAliPayApi($api);
+        $result = $this->pay->closeOrder($this->createCloseQuery(), '127.0.0.1');
+        self::assertTrue($result);
     }
 }

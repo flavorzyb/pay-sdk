@@ -250,4 +250,20 @@ class WxPayTest extends PayAbstractTest
         $result = $this->pay->orderQuery($this->createOrderQuery(), '127.0.0.1');
         self::assertFalse($result);
     }
+
+    public function testOrderClose()
+    {
+        $queryResult = ['result_code'=> 'SUCCESS', 'return_code'=> 'SUCCESS'];
+        $api = $this->createWxPayApi();
+        $api->shouldReceive('closeOrder')->andReturn($queryResult);
+        $this->pay->setWxPayApi($api);
+        $result = $this->pay->closeOrder($this->createCloseQuery(), '127.0.0.1');
+        self::assertTrue($result);
+
+        $api = $this->createWxPayApi();
+        $api->shouldReceive('closeOrder')->andReturn(false);
+        $this->pay->setWxPayApi($api);
+        $result = $this->pay->closeOrder($this->createCloseQuery(), '127.0.0.1');
+        self::assertFalse($result);
+    }
 }
