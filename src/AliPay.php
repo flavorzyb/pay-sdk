@@ -3,9 +3,14 @@ namespace Pay;
 
 use Pay\AliPay\AliPayApi;
 use Pay\AliPay\Modules\AliPayConfig;
+use Pay\AliPay\Modules\AliPayTradeQueryRequest;
+use Pay\AliPay\Modules\AliPayTradeStatus;
 use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
+use Pay\Modules\PayOrderQueryResult;
+use Pay\Modules\PayTradeStatus;
 use Simple\Log\Writer;
 use Pay\Modules\PayOrder;
+use Pay\Modules\PayOrderQuery;
 
 class AliPay extends PayAbstract
 {
@@ -51,13 +56,12 @@ class AliPay extends PayAbstract
      * 返回提交支付
      * @param   PayOrder $payOrder
      * @param string $ip
-     * @return  string | bool
+     * @return  string | false
      * @override
      */
     public function pay(PayOrder $payOrder, $ip)
     {
-        $result = parent::pay($payOrder, $ip);
-        if (!$result) {
+        if (!parent::pay($payOrder, $ip)) {
             return false;
         }
 
@@ -88,5 +92,52 @@ class AliPay extends PayAbstract
         }
 
         return $this->getAliPayApi()->pay($order);
+    }
+
+    private function buildTradeStatus(AliPayTradeStatus $status)
+    {
+        if ($status->isClosed()) {
+            return PayTradeStatus::createClosedStatus();
+        } elseif ($status->isFinished()) {
+            return PayTradeStatus::createClosedStatus();
+        } elseif ($status->isSuccess()) {
+            return PayTradeStatus::createSuccessStatus();
+        } elseif ($status->isWaitBuyerPay()) {
+            return PayTradeStatus::createNotPayStatus();
+        }
+
+        return PayTradeStatus::createOthersStatus();
+    }
+
+    /**
+     * 订单查询
+     * @param PayOrderQuery $query
+     * @param string $ip
+     * @return false|PayOrderQueryResult
+     */
+    public function orderQuery(PayOrderQuery $query, $ip)
+    {
+        if (!parent::orderQuery($query, $ip)) {
+            return false;
+        }
+
+        $data = new AliPayTradeQueryRequest();
+        $data->setTradeNo($query->getTradeNo());
+        $data->setOutTradeNo($query->getOrderId());
+
+        $query = $this->getAliPayApi()->orderQuery($data);
+
+        if (false == $query) {
+            return false;
+        }
+
+        $result = new PayOrderQueryResult();
+        $result->setOrderId($query->getOutTradeNo());
+        $result->setTradeNo($query->getTradeNo());
+        $result->setTotalAmount($query->getTotalAmount());
+        $result->setReceiptAmount($query->getReceiptAmount());
+        $result->setTradeStatus($this->buildTradeStatus($query->getTradeStatus()));
+
+        return $result;
     }
 }

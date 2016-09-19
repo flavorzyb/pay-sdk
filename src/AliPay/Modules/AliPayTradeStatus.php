@@ -52,17 +52,17 @@ class AliPayTradeStatus
         return self::WAIT_BUYER_PAY == $this->value;
     }
 
-    public function isTradeClosed()
+    public function isClosed()
     {
         return self::TRADE_CLOSED == $this->value;
     }
 
-    public function isTradeSuccess()
+    public function isSuccess()
     {
         return self::TRADE_SUCCESS == $this->value;
     }
 
-    public function isTradeFinished()
+    public function isFinished()
     {
         return self::TRADE_FINISHED == $this->value;
     }

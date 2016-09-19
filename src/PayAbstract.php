@@ -2,6 +2,7 @@
 namespace Pay;
 
 use Pay\Modules\PayOrder;
+use Pay\Modules\PayOrderQuery;
 use Simple\Log\Writer;
 
 abstract class PayAbstract
@@ -54,8 +55,18 @@ abstract class PayAbstract
         return true;
     }
 
-    public function orderQuery()
+    /**
+     * @param PayOrderQuery $query
+     * @param $ip
+     * @return bool
+     */
+    public function orderQuery(PayOrderQuery $query, $ip)
     {
+        if (('' == $query->getTradeNo()) && ('' == $query->getOrderId())) {
+            return false;
+        }
+
+        return true;
     }
 
     public function closeOrder()
