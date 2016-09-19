@@ -10,6 +10,7 @@ use Pay\WxPay\Modules\WxPayNotifyReply;
 use Pay\WxPay\WxJsApiPay;
 use Pay\WxPay\WxNativePay;
 use Pay\WxPay\WxPayApi;
+use Pay\Modules\PayOrderQueryResult;
 
 class WxPayMock extends WxPay
 {
@@ -60,7 +61,7 @@ class WxPayTest extends PayAbstractTest
         $orderId = date('Ymdhis').mt_rand();
         $result = new PayOrder();
         $result->setOrderId($orderId);
-        $result->setGoodsName('goodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoods');
+        $result->setGoodsName('goodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoodsgoods');
         $result->setPayAmount(10.10);
         $result->setExtra('extra');
         $result->setLimitPay(new LimitPay(LimitPay::NO_CREDIT));
@@ -229,5 +230,24 @@ class WxPayTest extends PayAbstractTest
         ob_end_clean();
         $str = '<xml><msg><![CDATA[aaaaaa]]></msg><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[签名失败]]></return_msg><sign><![CDATA[3D191CB8978B03EBF5B1E02929B897D9]]></sign></xml>';
         self::assertEquals($str, $result);
+    }
+
+    public function testOrderQuery()
+    {
+        $status = ['SUCCESS', 'REFUND', 'NOTPAY', 'CLOSED', 'REVOKED', 'USERPAYING', 'PAYERROR'];
+        foreach ($status as $v) {
+            $queryResult = ['transaction_id'=> '', 'out_trade_no'=> '', 'total_fee'=>100,'cash_fee'=> 66, 'trade_state'=> $v];
+            $api = $this->createWxPayApi();
+            $api->shouldReceive('orderQuery')->andReturn($queryResult);
+            $this->pay->setWxPayApi($api);
+            $result = $this->pay->orderQuery($this->createOrderQuery(), '127.0.0.1');
+            self::assertTrue($result instanceof PayOrderQueryResult);
+        }
+
+        $api = $this->createWxPayApi();
+        $api->shouldReceive('orderQuery')->andReturn(false);
+        $this->pay->setWxPayApi($api);
+        $result = $this->pay->orderQuery($this->createOrderQuery(), '127.0.0.1');
+        self::assertFalse($result);
     }
 }

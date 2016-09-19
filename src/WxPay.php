@@ -3,6 +3,7 @@ namespace Pay;
 
 use Pay\Modules\PayNotify;
 use Pay\Modules\PayOrder;
+use Pay\Modules\PayTradeStatus;
 use Pay\WxPay\Modules\WxPayConfig;
 use Pay\WxPay\Modules\WxPayNotifyReply;
 use Pay\WxPay\Modules\WxPayOrderQuery;
@@ -12,6 +13,8 @@ use Pay\WxPay\WxJsApiPay;
 use Pay\WxPay\WxNativePay;
 use Pay\WxPay\WxPayApi;
 use Simple\Log\Writer;
+use Pay\Modules\PayOrderQuery;
+use Pay\Modules\PayOrderQueryResult;
 
 class WxPay extends PayAbstract
 {
@@ -387,5 +390,54 @@ class WxPay extends PayAbstract
     public function createAppPayParams(array $data)
     {
         return $this->getWxNativePay()->createAppPayParams($data);
+    }
+
+    private function buildPayStatus($status)
+    {
+        $result = PayTradeStatus::createOthersStatus();
+        switch ($status) {
+            case 'CLOSED':
+                $result = PayTradeStatus::createClosedStatus();
+                break;
+            case 'SUCCESS':
+                $result = PayTradeStatus::createSuccessStatus();
+                break;
+            case 'NOTPAY':
+                $result = PayTradeStatus::createNotPayStatus();
+                break;
+        }
+
+        return $result;
+    }
+
+    /**
+     * 订单查询
+     * @param PayOrderQuery $query
+     * @param string $ip
+     * @return false|PayOrderQueryResult
+     */
+    public function orderQuery(PayOrderQuery $query, $ip)
+    {
+        if (!parent::orderQuery($query, $ip)) {
+            return false;
+        }
+
+        $data = new WxPayOrderQuery();
+        $data->setOutTradeNo($query->getOrderId());
+        $data->setTransactionId($query->getTradeNo());
+
+        $query = $this->getWxPayApi()->orderQuery($data, $ip);
+        if (!$query) {
+            return false;
+        }
+
+        $result = new PayOrderQueryResult();
+        $result->setTradeNo($query['transaction_id']);
+        $result->setOrderId($query['out_trade_no']);
+        $result->setTotalAmount(intval($query['total_fee']) / 100.0);
+        $result->setReceiptAmount(intval($query['cash_fee']) / 100.0);
+        $result->setTradeStatus($this->buildPayStatus($query['trade_state']));
+
+        return $result;
     }
 }
