@@ -1,6 +1,7 @@
 <?php
 namespace Pay;
 
+use Pay\Modules\PayNotify;
 use Pay\Modules\PayOrder;
 use Pay\Modules\PayOrderClose;
 use Pay\Modules\PayOrderQuery;
@@ -85,19 +86,27 @@ abstract class PayAbstract
         return true;
     }
 
-    public function refund()
-    {
-    }
-
-    public function refundQuery()
-    {
-    }
-
-    public function parseNotify($string, $ip)
-    {
-    }
+    /**
+     * 解析支付结果异步通知
+     *
+     * @param string $string json string
+     * @param string $ip
+     * @return false | PayNotify
+     */
+    abstract public function parseNotify($string, $ip);
 
     public function parsePayReturnResult()
     {
     }
+
+    /**
+     * 支付结果异步通知 回复成功
+     * @param PayNotify $notify
+     */
+    abstract public function notifyReplySuccess(PayNotify $notify);
+    /**
+     * 支付结果异步通知 回复失败
+     * @param PayNotify $notify
+     */
+    abstract public function notifyReplyFail(PayNotify $notify);
 }

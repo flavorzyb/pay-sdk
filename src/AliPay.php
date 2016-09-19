@@ -8,6 +8,7 @@ use Pay\AliPay\Modules\AliPayTradeCloseRequest;
 use Pay\AliPay\Modules\AliPayTradeQueryRequest;
 use Pay\AliPay\Modules\AliPayTradeStatus;
 use Pay\AliPay\Modules\AliPayTradeWapPayRequest;
+use Pay\Modules\PayNotify;
 use Pay\Modules\PayOrderQueryResult;
 use Pay\Modules\PayTradeStatus;
 use Simple\Log\Writer;
@@ -167,5 +168,40 @@ class AliPay extends PayAbstract
         }
 
         return true;
+    }
+
+    /**
+     * 解析支付结果异步通知
+     *
+     * @param string $string json string
+     * @param string $ip
+     * @return false | PayNotify
+     */
+    public function parseNotify($string, $ip)
+    {
+        $data = json_decode($string, true);
+        $result = $this->getAliPayApi()->parseNotify($data);
+        if (false === $result) {
+            return false;
+        }
+
+        $notify = new PayNotify();
+        $notify->setTradeNo($result->getTradeNo());
+        $notify->setOrderId($result->getOutTradeNo());
+        $notify->setTotalAmount($result->getTotalAmount());
+        $notify->setReceiptAmount($result->getReceiptAmount());
+        $notify->setTradeStatus($this->buildTradeStatus($result->getTradeStatus()));
+
+        return $notify;
+    }
+
+    public function notifyReplySuccess(PayNotify $notify)
+    {
+        echo "success";
+    }
+
+    public function notifyReplyFail(PayNotify $notify)
+    {
+        echo "fail";
     }
 }

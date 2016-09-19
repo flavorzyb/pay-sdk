@@ -758,6 +758,7 @@ class AliPayApi
         }
 
         if ($this->getConfig()->getAppId() != $data['app_id']) {
+            $this->getLogWriter()->error("parseNotify error app id: " . $data['app_id'] . "|" .$this->getConfig()->getAppId() . '|' . serialize($data));
             return false;
         }
 

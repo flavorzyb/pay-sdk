@@ -4,9 +4,11 @@ namespace Pay;
 use ConfigFactory;
 use Mockery as m;
 use Pay\AliPay\AliPayApi;
+use Pay\AliPay\Modules\AliPayNotify;
 use Pay\AliPay\Modules\AliPayTradeCloseResult;
 use Pay\AliPay\Modules\AliPayTradeQueryResult;
 use Pay\AliPay\Modules\AliPayTradeStatus;
+use Pay\Modules\PayNotify;
 use Pay\Modules\PayOrder;
 use Pay\Modules\LimitPay;
 use Pay\Modules\PayOrderQuery;
@@ -147,5 +149,35 @@ class AliPayTest extends PayAbstractTest
         $this->pay->setAliPayApi($api);
         $result = $this->pay->closeOrder($this->createCloseQuery(), '127.0.0.1');
         self::assertTrue($result);
+    }
+
+    public function testParseNotify()
+    {
+        $api = $this->createAliPayApi();
+        $api->shouldReceive('parseNotify')->andReturn(false);
+        $this->pay->setAliPayApi($api);
+        $result = $this->pay->parseNotify(json_encode(['test']), '127.0.0.1');
+        self::assertFalse($result);
+
+        $api = $this->createAliPayApi();
+        $api->shouldReceive('parseNotify')->andReturn(new AliPayNotify());
+        $this->pay->setAliPayApi($api);
+        $result = $this->pay->parseNotify(json_encode(['test']), '127.0.0.1');
+        self::assertTrue($result instanceof PayNotify);
+    }
+
+    public function testNotifyReply()
+    {
+        ob_start();
+        $this->pay->notifyReplySuccess(new PayNotify());
+        $result = ob_get_contents();
+        ob_end_clean();
+        self::assertEquals("success", $result);
+
+        ob_start();
+        $this->pay->notifyReplyFail(new PayNotify());
+        $result = ob_get_contents();
+        ob_end_clean();
+        self::assertEquals("fail", $result);
     }
 }
