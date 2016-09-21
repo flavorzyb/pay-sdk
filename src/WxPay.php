@@ -266,10 +266,6 @@ class WxPay extends PayAbstract
 
         if (false === $data) {
             $this->getLogWriter()->error("WxPay parseNotify Error: 验证签名错误 " . $xmlString);
-            $result = new WxPayNotifyReply();
-            $result->setReturnCode("FAIL");
-            $result->setReturnMsg("签名验证失败");
-            $this->replyNotify($result, false);
             return false;
         }
 
