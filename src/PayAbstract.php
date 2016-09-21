@@ -26,7 +26,7 @@ abstract class PayAbstract
     /**
      * @return Writer
      */
-    protected function getLogWriter()
+    public function getLogWriter()
     {
         return $this->logWriter;
     }
