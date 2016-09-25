@@ -402,10 +402,19 @@ class WxPay extends PayAbstract
         }
 
         $result = new PayOrderQueryResult();
-        $result->setTradeNo($query['transaction_id']);
+        if (isset($query['transaction_id'])) {
+            $result->setTradeNo($query['transaction_id']);
+        }
+
         $result->setOrderId($query['out_trade_no']);
-        $result->setTotalAmount(intval($query['total_fee']) / 100.0);
-        $result->setReceiptAmount(intval($query['cash_fee']) / 100.0);
+        if (isset($query['total_fee'])) {
+            $result->setTotalAmount(intval($query['total_fee']) / 100.0);
+        }
+
+        if (isset($query['cash_fee'])) {
+            $result->setReceiptAmount(intval($query['cash_fee']) / 100.0);
+        }
+
         $result->setTradeStatus($this->buildPayStatus($query['trade_state']));
 
         return $result;
