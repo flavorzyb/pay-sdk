@@ -375,6 +375,10 @@ class WxPayApi
 
         $this->reportCostTime(self::ORDER_QUERY_URL, $startTimeStamp, $result, $ip);//上报请求花费时间
 
+        if(isset($result['result_code']) && ('SUCCESS' != $result['result_code'])) {
+            return false;
+        }
+
         return $result;
     }
 
