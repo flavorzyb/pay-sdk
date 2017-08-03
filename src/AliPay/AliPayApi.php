@@ -653,6 +653,9 @@ class AliPayApi
         $result->setBuyerUserId($data['buyer_user_id']);
 
         if (isset($data['refund_detail_item_list'])) {
+            if (!is_array($data['fund_bill_list'])) {
+                $data['fund_bill_list'] = json_decode($data['fund_bill_list'], true);
+            }
             $result->setRefundDetailItemList($this->createFundBillArray($data['refund_detail_item_list']));
         }
 
@@ -850,6 +853,9 @@ class AliPayApi
         }
 
         if (isset($data['fund_bill_list'])) {
+            if (!is_array($data['fund_bill_list'])) {
+                $data['fund_bill_list'] = json_decode($data['fund_bill_list'], true);
+            }
             $result->setFundBillList($this->createFundBillArray($data['fund_bill_list']));
         }
 
