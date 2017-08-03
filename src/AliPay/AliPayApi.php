@@ -268,7 +268,7 @@ class AliPayApi
     {
         $config = $this->getConfig();
         $request->setNotifyUrl($config->getNotifyUrl());
-        $request->setReturnUrl($config->getNotifyUrl());
+        $request->setReturnUrl($config->getCallBackUrl());
         $request->setSellerId($config->getSellerId());
 
         $request = $this->initAliPayBase($request);
