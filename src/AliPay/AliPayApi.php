@@ -516,6 +516,10 @@ class AliPayApi
         }
 
         if (isset($data['fund_bill_list'])) {
+            if (!is_array($data['fund_bill_list'])) {
+                $data['fund_bill_list'] = json_decode($data['fund_bill_list'], true);
+            }
+            
             $result->setFundBillList($this->createFundBillArray($data['fund_bill_list']));
         }
 
